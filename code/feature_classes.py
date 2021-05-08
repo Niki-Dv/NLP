@@ -46,7 +46,7 @@ class feature_statistics_class():
                     cur_word, cur_tag = splited_words[word_idx].split('_')
                     w=""
                     for l in cur_word[-4:][::-1]:
-                        w+=l
+                        w=l+w
                         if (w, cur_tag) not in self.suffix_tags_count_dict:
                             self.suffix_tags_count_dict[(w, cur_tag)] = 1
                         else:
@@ -144,7 +144,7 @@ class feature2id_class():
                     cur_word, cur_tag = splited_words[word_idx].split( '_')
                     w=""
                     for l in cur_word[-4:][::-1]:
-                        w+=l
+                        w=l+w
                         if ((w, cur_tag) not in self.suffix_tags_dict) \
                                 and (self.feature_statistics.suffix_tags_count_dict[(w, cur_tag)] >= self.threshold):
                             self.words_tags_dict[(w, cur_tag)] = self.n_suffix_tag_pairs
