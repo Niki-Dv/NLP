@@ -1,6 +1,6 @@
 from collections import OrderedDict
 import re
-
+import numpy as np
 
 class feature_statistics_class():
     def __init__(self):
@@ -207,6 +207,7 @@ class feature2id_class():
         self.n_prev_word_tag_pairs = 0
         self.n_next_word_tag_pairs = 0
 
+
         # Init all features dictionaries
         self.words_tags_dict = OrderedDict()
         self.suffix_tags_dict = OrderedDict()
@@ -216,6 +217,70 @@ class feature2id_class():
         self.tag_dict = OrderedDict()
         self.prev_word_tag_dict = OrderedDict()
         self.next_word_tag_pairs_dict = OrderedDict()
+
+    #######################################################################################
+    def get_all_feat_dicts(self, file_path):
+        self.get_word_tag_pairs(file_path)
+        self.get_suffix_tag_pairs(file_path)
+        self.get_prefix_tag_pairs(file_path)
+        self.get_chain_tags(file_path)
+        self.get_tags_chain_len_2(file_path)
+        self.get_tag(file_path)
+        self.get_prev_word_tag_pair(file_path)
+        self.get_next_word_tag_pairs(file_path)
+
+    #######################################################################################
+    def get_represent_input_with_features(self, history):
+        """
+            Extract feature vector in per a given history
+            :param history: touple{word, pptag, ptag, ctag, nword, pword}
+            :param word_tags_dict: word\tag dict
+                Return a list with all features that are relevant to the given history
+        """
+        num_feat_list = [
+            self.n_word_tag_pairs,
+            self.n_suffix_tag_pairs,
+            self.n_prefix_tag_pairs,
+            self.n_chain_tags,
+            self.n_chain_tags_len_2,
+            self.n_tag,
+            self.n_prev_word_tag_pairs,
+            self.n_next_word_tag_pairs,
+        ]
+
+        word = history[0]
+        pptag = history[1]
+        ptag = history[2]
+        ctag = history[3]
+        nword = history[4]
+        pword = history[5]
+        features = []
+
+        # feature 100
+        feat_dict_count = 0
+        feat_dict_start_point = np.sum(num_feat_list[:feat_dict_count])
+        if (word, ctag) in self.words_tags_dict:
+            features.append(feat_dict_start_point + self.words_tags_dict[(word, ctag)])
+
+        # feature 101
+        feat_dict_count += 1
+        feat_dict_start_point = np.sum(num_feat_list[:feat_dict_count])
+        w = ""
+        for l in word[-4:][::-1]:
+            w = l + w
+            if (word, ctag) in self.suffix_tags_dict:
+                features.append(feat_dict_start_point + self.suffix_tags_dict[(w, ctag)])
+
+        # feature 102
+        feat_dict_count += 1
+        w = ""
+        for l in word[:4]:
+            w = w + l
+            key = (w, ctag)
+            if key in self.prefix_tags_dict:
+                features.append(feat_dict_start_point + self.prefix_tags_dict[key])
+
+        return features
 
     #######################################################################################
     def get_word_tag_pairs(self, file_path):
