@@ -180,7 +180,7 @@ class feature_statistics_class():
             for line in f:
                 words= re.split("_[A-z]+",line)  # creating words and tags lists
                 words[-1]="STOP"
-                tags= list(map(lambda x: x[1:],re.findall("_[A-z]+",line))) 
+                tags= re.findall("(?<=_)[A-z]+",line) 
                 tags.insert(0,"*") # creating words and tags lists
                 next_word_and_tag = list(zip(words, tags))
 
@@ -386,7 +386,7 @@ class feature2id_class():
             for line in f:
                 words= re.split("_[A-z]+",line)  # creating words and tags lists
                 words[-1]="STOP"
-                tags= list(map(lambda x: x[1:],re.findall("_[A-z]+",line))) 
+                tags= re.findall("(?<=_)[A-z]+",line) 
                 tags.insert(0,"*") # creating words and tags lists
                 next_word_and_tag = list(zip(words, tags))
                 for w, t in next_word_and_tag:
