@@ -178,11 +178,11 @@ class feature_statistics_class():
         """
         with open(file_path) as f:
             for line in f:
-                splited_words = re.split('[ \n]', line)
-                splited_words[-1] = "STOP_"
-                words, tags = list(
-                    zip(*list(map(lambda x: set(x.split('_')), splited_words))))  # creating words and tags lists
-                next_word_and_tag = list(zip(words[1:], tags[:-1]))
+                words= re.split("_[A-z]+",line)  # creating words and tags lists
+                words[-1]="STOP"
+                tags= list(map(lambda x: x[1:],re.findall("_[A-z]+",line))) 
+                tags.insert(0,"*") # creating words and tags lists
+                next_word_and_tag = list(zip(words, tags))
 
                 for w, t in next_word_and_tag:
                     if (w, t) not in self.next_word_tag_count_dict:
@@ -384,12 +384,11 @@ class feature2id_class():
         """
         with open(file_path) as f:
             for line in f:
-                splited_words = re.split('[ \n]', line)
-                splited_words[-1] = "STOP_"
-                words, tags = list(
-                    zip(*list(map(lambda x: set(x.split('_')), splited_words))))  # creating words and tags lists
-                next_word_and_tag = list(zip(words[1:], tags[:-1]))
-
+                words= re.split("_[A-z]+",line)  # creating words and tags lists
+                words[-1]="STOP"
+                tags= list(map(lambda x: x[1:],re.findall("_[A-z]+",line))) 
+                tags.insert(0,"*") # creating words and tags lists
+                next_word_and_tag = list(zip(words, tags))
                 for w, t in next_word_and_tag:
                     if ((w, t) not in self.next_word_tag_pairs_dict) \
                             and (self.feature_statistics.words_tags_dict[(w, t)] >= self.threshold):
