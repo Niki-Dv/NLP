@@ -8,6 +8,9 @@ import scipy.optimize
 import time
 import random
 
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+data_path = join(curr_dir, "..", 'data')
+
 random.seed(100)
 FEAT_THRESH = 1000
 NUM_LINES_ITER = 4999
@@ -96,12 +99,12 @@ def loss_function(w, train_total_dict, tot_num_features, OPTIM_LAMBDA = 0.5):
 def create_feature_representation_dict(file_path, feat_class):
     """
     create dictionary s.t.: dict[<line index>][<word idx in current line>] = [<actual feature>,
-    <feature for some tag 1>, , <feature for some tag 12> ... <feature for some tag n> ]
+    <feature for some tag 1>, , <feature for some tag 2> ... <feature for some tag n> ]
     :param file_path:
     :param feat_class:
     :return:
     """
-    train_data_path = join(r"C:\git-projects\NLP\data", f"train_data_dict_{FEAT_THRESH}.pkl")
+    train_data_path = join(data_path, f"train_data_dict_{FEAT_THRESH}.pkl")
     if os.path.isfile(train_data_path):
         with open(train_data_path, 'rb') as f:
             total_train_data_dict = pickle.load(f)
@@ -150,10 +153,15 @@ def find_optimal_weights(train_file_path, data_path):
 
     feat_stats = feature_classes.feature_statistics_class()
     feat_stats.get_all_counts(train_file_path)
+    print('finished creating features statistic dicts')
+
     feat_class = feature_classes.feature2id_class(feat_stats, FEAT_THRESH)
     feat_class.get_all_feat_dicts(train_file_path)
+    print('finished creating features dicts')
+
     tot_num_features = feat_class.n_total_features
     total_train_data_dict = create_feature_representation_dict(train_file_1, feat_class)
+    print('finished creating all data representation dict')
 
     # find optimal weights
     w_0 = np.random.rand(tot_num_features)
@@ -170,8 +178,6 @@ def find_optimal_weights(train_file_path, data_path):
 
 ######################################################################################################
 if __name__ == '__main__':
-    curr_dir = os.path.dirname(os.path.abspath(__file__))
-    data_path = join(curr_dir, "..", 'data')
     train_file_1 = join(curr_dir, "..", 'data', 'train1.wtag')
     find_optimal_weights(train_file_1, data_path)
 
