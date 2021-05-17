@@ -10,10 +10,17 @@ import random
 
 class LLM():
     def __init__(self,feat_thresh,num_line_iter,data_path):
+        """
 
-        self.feat_thresh = feat_thresh
-        self.num_line_iter= num_line_iter
-        self.data_path=data_path
+        :param feat_thresh:feature count threshold - empirical count must be higher than this
+        :param num_line_iter: number of line iteraions for loss func
+        :param data_path: data folder path
+ 
+        """
+
+        self.feat_thresh = feat_thresh#  
+        self.num_line_iter= num_line_iter# 
+        self.data_path=data_path# 
 
     def loss_function_gradient(self,w, train_total_dict, tot_num_features, OPTIM_LAMBDA=0.5):
         """
@@ -202,7 +209,7 @@ class LLM():
 
                 pre_calc={ p:pi[k-1][p,p_tag]/np.sum(vec_func(all_possible_tags_features(p))) for p in t_k(k-2) } 
                 for t in t_k(k):
-                    Pro=[pre_calc[p_2_tag]*feature_exp(f(t,p_2_tag)) for p_2_tag in t_k(k-2)]
+                    Pro=[pre_calc[p_2_tag]*feature_exp(f(t,p_2_tag)) for p_2_tag in t_k(k-2)]#note that sentence probability is exp to zero with k should consider adding ln
                     i=np.argmax(Pro)
                     pi[k][p_tag,t]=Pro[i]
                     Bp[k,p_tag,t]=t_k(k-2)[i]
@@ -214,6 +221,23 @@ class LLM():
             n-=1
         print ("finished with viterbi in: " ,time.time()-st)
         return s_tags
-
+    def tag_file(self,file_name):
+        """
+        gets file_name in data path with sentences
+         tags every word and save it in data_path\\tags_{feat_thresh}_file_name.  
+        
+        """
+        save_path=join(self.data_path,f'tags_{self.feat_thresh}_{file_name}')
+        file_path= join(self.data_path,file_name)
+        with open(file_path) as f_r, open(save_path,"w+") as f_s:
+            for line in f_r:
+                splited_words = line.split()
+                #del splited_words[-1] could be needed
+                tags= self.Viterbi(splited_words)
+                s=" ".join(list(map(lambda x,y: x+"_"+y,splited_words,tags)))
+                print("writing:")
+                print(s)
+                f_s.write(s+"\n")
+        print("saved in {save_path}")
 
     
