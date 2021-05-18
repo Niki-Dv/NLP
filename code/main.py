@@ -42,10 +42,10 @@ if __name__ == '__main__':
     #cProfile.runctx("Viterbi_test(L)",{"Viterbi_test":Viterbi_test},{"L": L},"qe")
     test_file_1= join(data_path, 'test1.wtag')
     comp_file_1= join(data_path, 'comp1.words')
-    test_file_without_tags_1= join(data_path, 'test1.words')
+    test_file_without_tags_1= join(data_path, 'v2test1.words')
     if not  os.path.isfile(test_file_without_tags_1):
         sperate_tags(test_file_1,test_file_without_tags_1)
-    L.tag_file('test1.words')
+    L.tag_file('v2test1.words')
     L.tag_file('comp1.words')
 
 

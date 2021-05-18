@@ -204,6 +204,7 @@ class LLM():
         f2= np.vectorize( lambda w,p_2_tag,p_tag,t,wn,wp:np.array([w,p_2_tag,p_tag,t,wn,wp],dtype=object) ,excluded=['w','wn',"wp"],signature='(),(),(),(),(),()->(k)')
         f12= np.vectorize( lambda y:  np.sum(get_w(self.feat_class.get_represent_input_with_features(y))) ,signature='(6)->()')
         f3= np.vectorize( (lambda k,h,x: pi[k][h[1],h[2]]*x) , excluded = ['k'] ,signature='(),(6),()->()')
+        
         def foo(h,x,d1,d2):
             d1[h[2],h[3]]= x
             d2[h[2],h[3]]= h[1]
