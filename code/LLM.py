@@ -5,6 +5,7 @@ import numpy as np
 import feature_classes
 import pickle
 import scipy.optimize
+import scipy
 import time
 import random
 
@@ -192,35 +193,53 @@ class LLM():
         :return: the most plausible  tag sequence for s  using viterbi
         """
         st= time.time()
-        all_possible_tags_features=[]
-        feature_exp=lambda feat_list: 1 if  (type(feat_list) is list)  and len(feat_list) == 0 else np.exp(np.sum((self.w[feat_list])))
-        vec_func =np.vectorize(feature_exp)
-        t_k=lambda k: list(self.feat_class.possible_tags) if k>0 else ['*']
         pi= {}
         Bp={}
+        Bp[0]={}
         pi[0]={}
         pi[0]['*','*']=1
+        end=len(s)+1
+        t_k=lambda k: ['.'] if k>=end  else ( list(self.feat_class.possible_tags) if k > 0   else ['*'] )
+        get_w=lambda l: [0] if len(l)==0 else self.w[l]
+        f2= np.vectorize( lambda w,p_2_tag,p_tag,t,wn,wp:np.array([w,p_2_tag,p_tag,t,wn,wp],dtype=object) ,excluded=['w','wn',"wp"],signature='(),(),(),(),(),()->(k)')
+        f12= np.vectorize( lambda y:  np.sum(get_w(self.feat_class.get_represent_input_with_features(y))) ,signature='(6)->()')
+        f3= np.vectorize( (lambda k,h,x: pi[k][h[1],h[2]]*x) , excluded = ['k'] ,signature='(),(6),()->()')
+        def foo(h,x,d1,d2):
+            d1[h[2],h[3]]= x
+            d2[h[2],h[3]]= h[1]
+        f4= np.vectorize( foo , excluded=['d1','d2'], signature='(6),(),(),()->()')
         for k in range(1,len(s)+1):
+            Bp[k]={}
             pi[k]={}
-            for p_tag in t_k(k-1):
-                f= lambda t,p_2_tag: self.feat_class.get_represent_input_with_features((s[k-1], p_2_tag, p_tag, t, ("." if  k==len(s) else s[k]), s[k-2]))
-                #creating function for getting features vectors for p_tag   
-                all_possible_tags_features= lambda p_2: [f(c_t,p_2) for c_t in t_k(k)]
+            w= s[k-1]
+            wn="." if k>=end-1 else s[k]
+            wp= s[k-2] 
+            tp_2=t_k(k-2)
+            t_p_1=t_k(k-1)
+            t=t_k(k)
+            x,y,z=np.meshgrid(tp_2,t_p_1,t)
+            b=f2(w,x,y,z,wn,wp)
+            c=f12(b)
+            c=scipy.special.softmax(c,axis=2)
+            c=f3(k-1,b,c)
+            max_indices=np.argmax(c,axis=1)
+            I, J = np.indices(max_indices.shape)
+            d1={}
+            d2={}
+            f4(b[I,max_indices,J],c[I,max_indices,J],d1,d2)
+            Bp[k]=d2
+            pi[k]=d1
 
-                pre_calc={ p:pi[k-1][p,p_tag]/np.sum(vec_func(all_possible_tags_features(p))) for p in t_k(k-2) } 
-                for t in t_k(k):
-                    Pro=[pre_calc[p_2_tag]*feature_exp(f(t,p_2_tag)) for p_2_tag in t_k(k-2)]#note that sentence probability is exp to zero with k should consider adding ln
-                    i=np.argmax(Pro)
-                    pi[k][p_tag,t]=Pro[i]
-                    Bp[k,p_tag,t]=t_k(k-2)[i]
         tag_s= [max(p_k.items(), key=lambda x:x[1])[0] for k,p_k in pi.items()]
-        s_tags=list(tag_s[-1])
         n= len(s)
+        s_tags=list(tag_s[-1])
         while n>2:
-            s_tags.insert(0,Bp[n,s_tags[0],s_tags[1]])
+            s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])
             n-=1
         print ("finished with viterbi in: " ,time.time()-st)
         return s_tags
+
+
     def tag_file(self,file_name):
         """
         gets file_name in data path with sentences
