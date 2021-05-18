@@ -200,15 +200,20 @@ class LLM():
         pi[0]['*','*']=1
         end=len(s)+1
         t_k=lambda k: ['.'] if k>=end  else ( list(self.feat_class.possible_tags) if k > 0   else ['*'] )
-        get_w=lambda l: [0] if len(l)==0 else self.w[l]
+        # getting group of tag at k level
+        get_w=lambda l: [0] if len(l)==0 else self.w[l] 
+
         f2= np.vectorize( lambda w,p_2_tag,p_tag,t,wn,wp:np.array([w,p_2_tag,p_tag,t,wn,wp],dtype=object) ,excluded=['w','wn',"wp"],signature='(),(),(),(),(),()->(k)')
+        #create history vector
         f12= np.vectorize( lambda y:  np.sum(get_w(self.feat_class.get_represent_input_with_features(y))) ,signature='(6)->()')
+        #sum the features weights getting from history vector   
         f3= np.vectorize( (lambda k,h,x: pi[k][h[1],h[2]]*x) , excluded = ['k'] ,signature='(),(6),()->()')
         
         def foo(h,x,d1,d2):
             d1[h[2],h[3]]= x
             d2[h[2],h[3]]= h[1]
         f4= np.vectorize( foo , excluded=['d1','d2'], signature='(6),(),(),()->()')
+
         for k in range(1,len(s)+1):
             Bp[k]={}
             pi[k]={}
@@ -218,12 +223,15 @@ class LLM():
             tp_2=t_k(k-2)
             t_p_1=t_k(k-1)
             t=t_k(k)
-            x,y,z=np.meshgrid(tp_2,t_p_1,t)
-            b=f2(w,x,y,z,wn,wp)
+            x,y,z=np.meshgrid(tp_2,t_p_1,t)#create grid from all input
+            b=f2(w,x,y,z,wn,wp)# find all possible history
+
+            #history array-> probability array
             c=f12(b)
             c=scipy.special.softmax(c,axis=2)
             c=f3(k-1,b,c)
-            max_indices=np.argmax(c,axis=1)
+            
+            max_indices=np.argmax(c,axis=1) 
             I, J = np.indices(max_indices.shape)
             d1={}
             d2={}
