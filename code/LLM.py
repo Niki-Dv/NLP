@@ -10,7 +10,7 @@ import time
 import random
 
 class LLM():
-    def __init__(self,feat_thresh,num_line_iter,data_path):
+    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path):
         """
 
         :param feat_thresh:feature count threshold - empirical count must be higher than this
@@ -19,9 +19,10 @@ class LLM():
  
         """
 
-        self.feat_thresh = feat_thresh#  
+        self.feat_thresh = feat_thresh#
+        self.special_feat_threshold = special_features_thresh
         self.num_line_iter= num_line_iter# 
-        self.data_path=data_path# 
+        self.data_path=data_path#
 
     def loss_function_gradient(self,w, train_total_dict, tot_num_features, OPTIM_LAMBDA=0.5):
         """
@@ -157,7 +158,7 @@ class LLM():
         self.feat_stats = feature_classes.feature_statistics_class()
         self.feat_stats.get_all_counts(self.train_file_path)
         print('finished creating features statistic dicts')
-        self.feat_class = feature_classes.feature2id_class(self.feat_stats, self.feat_thresh)
+        self.feat_class = feature_classes.feature2id_class(self.feat_stats, self.feat_thresh, self.special_feat_threshold)
         self.feat_class.get_all_feat_dicts(self.train_file_path)
         print('finished creating features dicts')
          #get feat_class
@@ -258,6 +259,7 @@ class LLM():
                 print("writing:")
                 print(s)
                 f_s.write(s+"\n")
+                f_s.flush()
         print("saved in {save_path}")
 
     

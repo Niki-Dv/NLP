@@ -60,8 +60,8 @@ class feature_statistics_class():
                 del splited_words[-1]
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
-                    w = ""
-                    for l in cur_word[-4:][::-1]:
+                    w = cur_word[-1]
+                    for l in cur_word[-3:-1][::-1]:
                         w = l + w
                         if (w, cur_tag) not in self.suffix_tags_count_dict:
                             self.suffix_tags_count_dict[(w, cur_tag)] = 1
@@ -81,8 +81,8 @@ class feature_statistics_class():
                 del splited_words[-1]
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
-                    w = ""
-                    for l in cur_word[:4]:
+                    w = cur_word[0]
+                    for l in cur_word[1:3]:
                         w = w + l
                         if (w, cur_tag) not in self.prefix_tags_count_dict:
                             self.prefix_tags_count_dict[(w, cur_tag)] = 1
@@ -191,9 +191,11 @@ class feature_statistics_class():
 
 #######################################################################################################################
 class feature2id_class():
-    def __init__(self, feature_statistics, threshold):
+    def __init__(self, feature_statistics, threshold, special_feat_threshold):
         self.feature_statistics = feature_statistics  # statistics class, for each feature gives empirical counts
         self.threshold = threshold  # feature count threshold - empirical count must be higher than this
+        self.special_feat_threshold = special_feat_threshold  # feature count threshold - empirical count must be higher than this
+        self.special_tags = ['CD', 'JJR', 'MD', '""', "''", "``"]
         self.possible_tags = set()
         self.n_total_features = 0  # Total number of features accumulated
 
@@ -207,6 +209,11 @@ class feature2id_class():
         self.n_next_word_tag_pairs = 0
         self.n_is_nunber = 1
         self.n_is_capital_in_middle = 1
+        self.n_is_word_len_smaller_than_4 = 1
+        self.n_is_word_smaller_than_prev = 1
+        self.n_is_word_smaller_than_next = 1
+        self.n_is_word_ends_with_s = 1
+        self.n_word_is_not_word_or_number = 1
 
         # Init all features dictionaries
         self.words_tags_dict = OrderedDict()
@@ -228,8 +235,14 @@ class feature2id_class():
         self.get_tag(file_path)
         self.get_prev_word_tag_pair(file_path)
         self.get_next_word_tag_pairs(file_path)
-        self.n_total_features += 1
-        self.n_total_features += 1
+        self.n_total_features += 1 # for number feat
+        self.n_total_features += 1 # for is captial feat
+        self.n_total_features += 1 # for is word length smaller then 4
+        self.n_total_features += 1 # for is word smaller then prev word
+        self.n_total_features += 1 # for is word smaller then next word
+        self.n_total_features += 1 # for word ends with s
+        self.n_total_features += 1 # for word is not actual word or number
+
 
     #######################################################################################
     def get_represent_input_with_features(self, history):
@@ -249,7 +262,12 @@ class feature2id_class():
             self.n_prev_word_tag_pairs,
             self.n_next_word_tag_pairs,
             self.n_is_nunber,
-            self.n_is_capital_in_middle
+            self.n_is_capital_in_middle,
+            self.n_is_word_len_smaller_than_4,
+            self.n_is_word_smaller_than_prev,
+            self.n_is_word_smaller_than_next,
+            self.n_is_word_ends_with_s,
+            self.n_word_is_not_word_or_number
         ]
 
         word = history[0]
@@ -326,10 +344,40 @@ class feature2id_class():
         if self.get_is_number(word):
             features.append(feat_dict_start_point)
 
-        # feature 107
+        # feature is cpaital in middle
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
         if self.get_is_capital_in_middle(word):
+            features.append(feat_dict_start_point)
+
+        # feature for is word length smaller than 4
+        feat_dict_count += 1
+        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
+        if len(word) < 4:
+            features.append(feat_dict_start_point)
+
+        # feature for is word length smaller than prev
+        feat_dict_count += 1
+        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
+        if len(word) < len(pword):
+            features.append(feat_dict_start_point)
+
+        # feature for is word length smaller than next
+        feat_dict_count += 1
+        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
+        if len(word) < len(nword):
+            features.append(feat_dict_start_point)
+
+        # feature for is word ends with s
+        feat_dict_count += 1
+        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
+        if word[-1] == 's':
+            features.append(feat_dict_start_point)
+
+        # feature for is word not word or number
+        feat_dict_count += 1
+        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
+        if self.get_is_not_word_or_number(word):
             features.append(feat_dict_start_point)
 
         return features
@@ -348,8 +396,9 @@ class feature2id_class():
 
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
-                    if ((cur_word, cur_tag) not in self.words_tags_dict) \
-                            and (self.feature_statistics.words_tags_count_dict[(cur_word, cur_tag)] >= self.threshold):
+                    if ((cur_word, cur_tag) not in self.words_tags_dict) and\
+                            ((self.feature_statistics.words_tags_count_dict[(cur_word, cur_tag)] >= self.threshold) or
+                             (cur_tag in self.special_tags)):
                         self.words_tags_dict[(cur_word, cur_tag)] = self.n_word_tag_pairs
                         self.n_word_tag_pairs += 1
         self.n_total_features += self.n_word_tag_pairs
@@ -368,8 +417,8 @@ class feature2id_class():
 
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
-                    w = ""
-                    for l in cur_word[-4:][::-1]:
+                    w = cur_word[-1]
+                    for l in cur_word[-3:-1][::-1]:
                         w = l + w
                         if ((w, cur_tag) not in self.suffix_tags_dict) \
                                 and (self.feature_statistics.suffix_tags_count_dict[(w, cur_tag)] >= self.threshold):
@@ -391,8 +440,8 @@ class feature2id_class():
                 del splited_words[-1]
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
-                    w = ""
-                    for l in cur_word[:4]:
+                    w = cur_word[0]
+                    for l in cur_word[1:3]:
                         w = w + l
                         key = (w, cur_tag)
                         if key not in self.prefix_tags_dict and \
@@ -516,8 +565,16 @@ class feature2id_class():
 
     ######################################################################################
     def get_is_number(self, word):
-        return word.isdigit()
+        reg = re.compile("[0-9][0-9,]+")
+        return bool(reg.match(word))
 
     ######################################################################################
     def get_is_capital_in_middle(self, word):
         return word[0].isupper()
+
+    ######################################################################################
+    def get_is_not_word_or_number(self, word):
+        if not self.get_is_number(word) and not bool(re.match('[a-z,A-Z]', word)):
+            return True
+        return False
+
