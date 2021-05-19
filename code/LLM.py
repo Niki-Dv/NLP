@@ -8,7 +8,7 @@ import scipy.optimize
 import scipy
 import time
 import random
-
+import multiprocessing
 class LLM():
     def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path):
         """
@@ -188,11 +188,12 @@ class LLM():
         self.train_file_path=file_path
         self.w = self.find_optimal_weights()
 
-    def Viterbi(self,s):
+    def Viterbi(self, line):
         """
         gets weight vector w and list of words s and returns 
         :return: the most plausible  tag sequence for s  using viterbi
         """
+        s = line.split()
         st= time.time()
         pi= {}
         Bp={}
@@ -246,6 +247,7 @@ class LLM():
         while n>2:
             s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])
             n-=1
+
         print ("finished with viterbi in: " ,time.time()-st)
         return s_tags
 
@@ -258,16 +260,21 @@ class LLM():
         """
         save_path=join(self.data_path,f'tags_{self.feat_thresh}_{file_name}')
         file_path= join(self.data_path,file_name)
-        with open(file_path) as f_r, open(save_path,"w+") as f_s:
-            for line in f_r:
-                splited_words = line.split()
-                #del splited_words[-1] could be needed
-                tags= self.Viterbi(splited_words)
-                s=" ".join(list(map(lambda x,y: x+"_"+y,splited_words,tags)))
+
+        with open(file_path) as f_r:
+            all_lines = f_r.readlines()
+
+        print(f'pool is using  {multiprocessing.cpu_count()-1} processes')
+        with multiprocessing.Pool(processes=multiprocessing.cpu_count()-1) as pool:
+            results = pool.map(self.Viterbi, all_lines)
+
+        with open(save_path, "w+") as f_s:
+            for result in results:
                 print("writing:")
-                print(s)
-                f_s.write(s+"\n")
+                print(result)
+                f_s.write(result + "\n")
                 f_s.flush()
+
         print("saved in {save_path}")
 
     

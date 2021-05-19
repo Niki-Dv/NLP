@@ -61,6 +61,13 @@ class feature_statistics_class():
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
                     w = cur_word[-1]
+
+                    if w == 's':
+                        if (w, cur_tag) not in self.suffix_tags_count_dict:
+                            self.suffix_tags_count_dict[(w, cur_tag)] = 1
+                        else:
+                            self.suffix_tags_count_dict[(w, cur_tag)] += 1
+
                     for l in cur_word[-3:-1][::-1]:
                         w = l + w
                         if (w, cur_tag) not in self.suffix_tags_count_dict:
@@ -287,8 +294,12 @@ class feature2id_class():
         # feature 101
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        w = ""
-        for l in word[-4:][::-1]:
+        w = word[-1]
+        if w == 's':
+            if (w, ctag) in self.suffix_tags_dict:
+                features.append(feat_dict_start_point + self.suffix_tags_dict[(w, ctag)])
+
+        for l in word[-3:-1][::-1]:
             w = l + w
             if (word, ctag) in self.suffix_tags_dict:
                 features.append(feat_dict_start_point + self.suffix_tags_dict[(w, ctag)])
@@ -296,8 +307,8 @@ class feature2id_class():
         # feature 102
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        w = ""
-        for l in word[:4]:
+        w = word[0]
+        for l in word[:3]:
             w = w + l
             key = (w, ctag)
             if key in self.prefix_tags_dict:
@@ -417,7 +428,13 @@ class feature2id_class():
 
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
+
                     w = cur_word[-1]
+                    if w == 's':
+                        if (w, cur_tag) not in self.suffix_tags_dict:
+                            self.words_tags_dict[(w, cur_tag)] = self.n_suffix_tag_pairs
+                            self.n_suffix_tag_pairs += 1
+
                     for l in cur_word[-3:-1][::-1]:
                         w = l + w
                         if ((w, cur_tag) not in self.suffix_tags_dict) \
