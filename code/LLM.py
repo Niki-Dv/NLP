@@ -26,6 +26,7 @@ class LLM():
         self.num_line_iter= num_line_iter# 
         self.data_path=data_path#
         self.save_files_prefix = save_files_prefix
+        self.feat_stats = None
 
     def loss_function_gradient(self,w, train_total_dict, tot_num_features, OPTIM_LAMBDA=0.5):
         """
@@ -155,9 +156,7 @@ class LLM():
 
     ######################################################################################################
     def find_optimal_weights(self):
-        optimal_weights_path = join(self.data_path, f'{self.save_files_prefix}optimal_weights_'
-                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}.pkl')
-        optimal_weights_path = join(self.data_path, 'optimal_weights_10.pkl')
+
         self.feat_stats = feature_classes.feature_statistics_class()
         self.feat_stats.get_all_counts(self.train_file_path)
         print('finished creating features statistic dicts')
@@ -165,6 +164,10 @@ class LLM():
         self.feat_class.get_all_feat_dicts(self.train_file_path)
         print('finished creating features dicts')
          #get feat_class
+
+        optimal_weights_path = join(self.data_path, f'{self.save_files_prefix}_optimal_weights_'
+                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
+                                                    f'{self.feat_stats.n_total_features}.pkl')
 
         if os.path.isfile(optimal_weights_path):
             print('Weights already calculated')

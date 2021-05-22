@@ -86,9 +86,8 @@ def train_test_section_b():
     data_path = join(curr_dir, "..", 'data')
     train_file_name = 'train2.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(10, 10, 4999, data_path, train_file_name)
+    L = LLM(10, 10, 4000, data_path, train_file_name)
     L.train(train_file)
-
     tags_file = L.tag_file_multi_2('comp2.words')
 
 if __name__ == '__main__':
