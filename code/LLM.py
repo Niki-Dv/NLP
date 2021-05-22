@@ -157,6 +157,7 @@ class LLM():
     def find_optimal_weights(self):
         optimal_weights_path = join(self.data_path, f'{self.save_files_prefix}optimal_weights_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}.pkl')
+        optimal_weights_path = join(self.data_path, 'optimal_weights_10.pkl')
         self.feat_stats = feature_classes.feature_statistics_class()
         self.feat_stats.get_all_counts(self.train_file_path)
         print('finished creating features statistic dicts')
@@ -314,12 +315,15 @@ class LLM():
 
         results_dict = {}
         curr_line_needed = 0
-        while curr_line_needed <= len(all_lines):
+        while True:
             if curr_line_needed in results_dict.keys():
+                print(f"writing line {curr_line_needed}")
                 f_s = open(save_path, "a")
                 f_s.write(results_dict[curr_line_needed] + "\n")
                 f_s.close()
                 curr_line_needed += 1
+                if curr_line_needed == len(all_lines):
+                    break
             try:
                 line_idx, s = results_queue.get(timeout=100)
                 results_dict[line_idx] = s
@@ -339,12 +343,12 @@ class LLM():
         save_path = join(self.data_path, f'tags_{self.save_files_prefix}{self.feat_thresh}_{file_name}')
         file_path = join(self.data_path, file_name)
         with open(file_path) as f_r, open(save_path, "w+") as f_s:
-            for line in f_r:
+            for line_idx, line in enumerate(f_r):
                 splited_words = line.split()
                 # del splited_words[-1] could be needed
                 tags = self.Viterbi(line)
                 s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
-                print("writing:")
+                print(f"writing line {line_idx}")
                 print(s)
                 f_s.write(s + "\n")
                 f_s.flush()
