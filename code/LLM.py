@@ -1,3 +1,4 @@
+import queue
 import sys, os
 from os.path import join
 import re
@@ -10,7 +11,7 @@ import time
 import random
 import multiprocessing
 class LLM():
-    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path):
+    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path, save_files_prefix=""):
         """
 
         :param feat_thresh:feature count threshold - empirical count must be higher than this
@@ -20,9 +21,11 @@ class LLM():
         """
 
         self.feat_thresh = feat_thresh#
+        self.optim_lambda_val = 0.3
         self.special_feat_threshold = special_features_thresh
         self.num_line_iter= num_line_iter# 
         self.data_path=data_path#
+        self.save_files_prefix = save_files_prefix
 
     def loss_function_gradient(self,w, train_total_dict, tot_num_features, OPTIM_LAMBDA=0.5):
         """
@@ -80,7 +83,7 @@ class LLM():
         print('started calc loss func')
 
         num_lines = max(train_total_dict.keys())
-        curr_lines_idxs = random.sample(list(range(num_lines)), self.num_line_iter)
+        curr_lines_idxs = random.sample(list(range(num_lines)), min(self.num_line_iter, num_lines))
 
         lose_func_val = 0
         for line_idx in curr_lines_idxs:
@@ -152,9 +155,8 @@ class LLM():
 
     ######################################################################################################
     def find_optimal_weights(self):
-        optimal_weights_path = join(self.data_path, f'optimal_weights_{self.feat_thresh}.pkl')
-        
-
+        optimal_weights_path = join(self.data_path, f'{self.save_files_prefix}optimal_weights_'
+                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}.pkl')
         self.feat_stats = feature_classes.feature_statistics_class()
         self.feat_stats.get_all_counts(self.train_file_path)
         print('finished creating features statistic dicts')
@@ -174,20 +176,21 @@ class LLM():
         # find optimal weights
         w_0 = np.random.rand(tot_num_features)
         res = scipy.optimize.minimize(self.loss_function, w_0,
-                                    args=(total_train_data_dict, tot_num_features),
+                                    args=(total_train_data_dict, tot_num_features, self.optim_lambda_val),
                                     method="L-BFGS-B",
                                     jac=self.loss_function_gradient)
-        optimal_weights_path = join(self.data_path, f'optimal_weights_{self.feat_thresh}.pkl')
         with open(optimal_weights_path, 'wb') as f:
             pickle.dump(res.x, f, protocol=pickle.HIGHEST_PROTOCOL)
             print(f'saved optimal weights in: {optimal_weights_path}')
         
         return res.x
 
+    ################################################################################################
     def train(self,file_path):
         self.train_file_path=file_path
         self.w = self.find_optimal_weights()
 
+    ################################################################################################
     def Viterbi(self, line):
         """
         gets weight vector w and list of words s and returns 
@@ -251,30 +254,109 @@ class LLM():
         print ("finished with viterbi in: " ,time.time()-st)
         return s_tags
 
-
-    def tag_file(self,file_name):
+    ################################################################################################
+    def tag_file_multi(self,file_name):
         """
         gets file_name in data path with sentences
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.  
         
         """
+        t0 = time.time()
         save_path=join(self.data_path,f'tags_{self.feat_thresh}_{file_name}')
         file_path= join(self.data_path,file_name)
 
         with open(file_path) as f_r:
             all_lines = f_r.readlines()
 
-        print(f'pool is using  {multiprocessing.cpu_count()-1} processes')
-        with multiprocessing.Pool(processes=multiprocessing.cpu_count()-1) as pool:
+        print(f'pool is using  {round(multiprocessing.cpu_count()/2)} processes')
+        with multiprocessing.Pool(processes=round(multiprocessing.cpu_count()/2)) as pool:
             results = pool.map(self.Viterbi, all_lines)
 
-        with open(save_path, "w+") as f_s:
-            for result in results:
+        with open(file_path) as f_r, open(save_path, "w+") as f_s:
+            for line_idx, line in enumerate(f_r):
+                splited_words = line.split()
+                # del splited_words[-1] could be needed
+                tags = results[line_idx]
+                s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
                 print("writing:")
-                print(result)
-                f_s.write(result + "\n")
+                print(s)
+                f_s.write(s + "\n")
+                f_s.flush()
+
+
+        print(f"saved in {save_path}, tagging took: {time.time()-t0}")
+        return save_path
+
+    ################################################################################################
+    def tag_file_multi_2(self, file_name):
+        """
+        gets file_name in data path with sentences
+         tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
+
+        """
+        t0 = time.time()
+        save_path = join(self.data_path, f'tags_{self.feat_thresh}_{file_name}')
+        file_path = join(self.data_path, file_name)
+
+        with open(file_path) as f_r:
+            all_lines = f_r.readlines()
+
+        lines_queue = multiprocessing.Queue()
+        results_queue = multiprocessing.Queue()
+
+        print(f'pool is using  {round(multiprocessing.cpu_count() / 2)} processes')
+        the_pool = multiprocessing.Pool(round(multiprocessing.cpu_count() / 2), worker_main, (self, lines_queue, results_queue,))
+        for line_item in enumerate(all_lines):
+            lines_queue.put(line_item)
+
+        f_s = open(save_path, "w+")
+        f_s.close()
+
+        results_dict = {}
+        curr_line_needed = 0
+        while curr_line_needed <= len(all_lines):
+            if curr_line_needed in results_dict.keys():
+                f_s = open(save_path, "a")
+                f_s.write(results_dict[curr_line_needed] + "\n")
+                f_s.close()
+                curr_line_needed += 1
+            try:
+                line_idx, s = results_queue.get(timeout=100)
+                results_dict[line_idx] = s
+            except queue.Empty:
+                print('empty queue, waiting again')
+
+        print(f"saved in {save_path}, tagging took: {time.time() - t0}")
+        return save_path
+
+    ################################################################################################
+    def tag_file(self, file_name):
+        """
+        gets file_name in data path with sentences
+         tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
+
+        """
+        save_path = join(self.data_path, f'tags_{self.save_files_prefix}{self.feat_thresh}_{file_name}')
+        file_path = join(self.data_path, file_name)
+        with open(file_path) as f_r, open(save_path, "w+") as f_s:
+            for line in f_r:
+                splited_words = line.split()
+                # del splited_words[-1] could be needed
+                tags = self.Viterbi(line)
+                s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
+                print("writing:")
+                print(s)
+                f_s.write(s + "\n")
                 f_s.flush()
 
         print("saved in {save_path}")
 
-    
+################################################################################################
+def worker_main(L, lines_queue, results_queue):
+    print("PROC CREATED")
+    while True:
+        line_idx, line = lines_queue.get()
+        tags = L.Viterbi(line)
+        splited_words = line.split()
+        s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
+        results_queue.put((line_idx, s))
