@@ -11,18 +11,23 @@ import time
 import random
 import multiprocessing
 class LLM():
-    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path, save_files_prefix=""):
+    def __init__(self, feat_thresh, special_features_thresh ,num_line_iter, data_path, save_files_prefix="",viterbi_beam_num=5):
         """
 
         :param feat_thresh:feature count threshold - empirical count must be higher than this
+        :param feat_thresh:feature count threshold - empirical count must be higher than this
+        
+
         :param num_line_iter: number of line iteraions for loss func
         :param data_path: data folder path
+        :param viterbi_beam_num: optimazer for viterbi runtime num of path in a given time in viterbi  
  
         """
 
         self.feat_thresh = feat_thresh#
         self.optim_lambda_val = 0.3
         self.special_feat_threshold = special_features_thresh
+        self.m=viterbi_beam_num
         self.num_line_iter= num_line_iter# 
         self.data_path=data_path#
         self.save_files_prefix = save_files_prefix
@@ -197,8 +202,8 @@ class LLM():
     ################################################################################################
     def Viterbi(self, line):
         """
-        gets weight vector w and list of words s and returns 
-        :return: the most plausible  tag sequence for s  using viterbi
+            gets weight vector w and list of words s and and m as beam size returns 
+            :return: the most plausible  tag sequence for s  using viterbi
         """
         s = line.split()
         st= time.time()
@@ -223,28 +228,35 @@ class LLM():
             d2[h[2],h[3]]= h[1]
         f4= np.vectorize( foo , excluded=['d1','d2'], signature='(6),(),(),()->()')
 
+        tp_2=["*"]
+        tp_1=["*"]
         for k in range(1,len(s)+1):
             Bp[k]={}
             pi[k]={}
             w= s[k-1]
             wn="." if k>=end-1 else s[k]
             wp= s[k-2] 
-            tp_2=t_k(k-2)
-            t_p_1=t_k(k-1)
             t=t_k(k)
-            x,y,z=np.meshgrid(tp_2,t_p_1,t)#create grid from all input
-            b=f2(w,x,y,z,wn,wp)# find all possible history
-
-            #history array-> probability array
+            #print(tp_2)
+            x,y,z=np.meshgrid(tp_2,tp_1,t)
+            b=f2(w,x,y,z,wn,wp)
             c=f12(b)
             c=scipy.special.softmax(c,axis=2)
             c=f3(k-1,b,c)
-            
-            max_indices=np.argmax(c,axis=1) 
+            max_indices=np.argmax(c,axis=1)
             I, J = np.indices(max_indices.shape)
+            cq=c[I,max_indices,J]
+            bq=b[I,max_indices,J]
+            #print(cq.shape,bq.shape)
+            indexs=np.argpartition(cq,kth=cq.shape[-1]- self.m ,axis=-1)[..., -self.m:]
+            cq=cq[...,indexs]
+            bq=bq[...,indexs,:]
+            tp_2=np.unique(bq[...,2])
+            tp_1=np.unique(bq[...,3])
+            #print(len(t_p_1),len(tp_2))
             d1={}
             d2={}
-            f4(b[I,max_indices,J],c[I,max_indices,J],d1,d2)
+            f4(bq,cq,d1,d2)
             Bp[k]=d2
             pi[k]=d1
 
@@ -263,6 +275,7 @@ class LLM():
 
         print ("finished with viterbi in: " ,time.time()-st)
         return s_tags
+
 
     ################################################################################################
     def tag_file_multi(self,file_name):
