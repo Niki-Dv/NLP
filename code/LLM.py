@@ -265,12 +265,9 @@ class LLM():
         s_tags=list(tag_s[-1])
 
         while n>2:
-            if Bp[n][s_tags[0],s_tags[1]] == 'NN' and s[n-2].endswith("s"):
-                s_tags.insert(0, 'NNS')
-            elif Bp[n][s_tags[0],s_tags[1]] == 'NNS' and not s[n-2].endswith("s"):
-                s_tags.insert(0, 'NN')
-            else:
-                s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])
+            if (s_tags[0],s_tags[1]) not in Bp[n]:#for debugging
+                print (s)
+            s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
             n-=1
 
         print ("finished with viterbi in: " ,time.time()-st)
