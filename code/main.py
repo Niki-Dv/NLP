@@ -76,7 +76,7 @@ def train_test_section_a():
     data_path = join(curr_dir, "..", 'data')
     train_file_name = 'train1.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(0, 0, 4999, data_path, train_file_name, optim_lambda_val=0.25)
+    L = LLM(0, 0, 4999, data_path, train_file_name,save_files_prefix="module1" , optim_lambda_val=0.25)
     L.train(train_file)
     tags_file = L.tag_file_multi_2('test1.words',"module1")
     test(data_path, tags_file)
@@ -86,11 +86,11 @@ def train_test_section_b():
     data_path = join(curr_dir, "..", 'data')
     train_file_name = 'train2.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(0, 0, 249, data_path, train_file_name, optim_lambda_val=0.25)
+    L = LLM(0, 0, 249, data_path, train_file_name,save_files_prefix="module2" ,optim_lambda_val=0.25)
     L.train(train_file)
-    tags_file = L.tag_file_multi_2('test1.words',"module2")
+    tags_file = L.tag_file_multi_2('test1.words')
 
-    tags_file = L.tag_file_multi_2('comp2.words',"module2")
+    tags_file = L.tag_file_multi_2('comp2.words')
 
 if __name__ == '__main__':
     train_test_section_a()
