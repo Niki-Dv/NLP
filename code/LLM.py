@@ -267,14 +267,14 @@ class LLM():
 
 
     ################################################################################################
-    def tag_file_multi(self,file_name, save_files_prefix=""):
+    def tag_file_multi(self,file_name):
         """
         gets file_name in data path with sentences
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.  
         
         """
         t0 = time.time()
-        save_path=join(self.data_path, f'{save_files_prefix}_tags_'
+        save_path=join(self.data_path, f'{self.save_files_prefix}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path= join(self.data_path,file_name)
@@ -300,14 +300,14 @@ class LLM():
         return save_path
 
     ################################################################################################
-    def tag_file_multi_2(self, file_name,save_files_prefix):
+    def tag_file_multi_2(self, file_name):
         """
         gets file_name in data path with sentences
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
 
         """
         t0 = time.time()
-        save_path=join(self.data_path, f'{save_files_prefix}_tags_'
+        save_path=join(self.data_path, f'{self.save_files_prefix}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path = join(self.data_path, file_name)
