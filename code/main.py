@@ -76,7 +76,7 @@ def train_test_section_a():
     data_path = join(curr_dir, "..", 'data')
     train_file_name = 'train1.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(10, 10, 3000, data_path, train_file_name)
+    L = LLM(5, 5, 4000, data_path, train_file_name)
     L.train(train_file)
     tags_file = L.tag_file_multi_2('v2test1.words')
     test(data_path, tags_file)
@@ -86,12 +86,12 @@ def train_test_section_b():
     data_path = join(curr_dir, "..", 'data')
     train_file_name = 'train2.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(10, 10, 4000, data_path, train_file_name)
+    L = LLM(5, 5, 4000, data_path, train_file_name)
     L.train(train_file)
     tags_file = L.tag_file_multi_2('comp2.words')
 
 if __name__ == '__main__':
-    train_test_section_a()
+    #train_test_section_a()
     #train_test_section_b()
     #data_path = join(curr_dir, "..", 'data')
     # train_file_1 = join(data_path, 'train1.wtag')
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     # if not  os.path.isfile(test_file_without_tags_1):
     #     sperate_tags(test_file_1,test_file_without_tags_1)
     #data_path = join(curr_dir, "..", 'data')
-    my_tags = join(curr_dir, "..",'data', 'tags_10_v2test1.words')
+    my_tags = join(curr_dir, "..",'data', 'tags_5_v2test1.words')
     test(data_path, my_tags)
 
 
