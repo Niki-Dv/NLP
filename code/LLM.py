@@ -156,6 +156,7 @@ class LLM():
             pickle.dump(total_train_data_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
         return total_train_data_dict
 
+
     ######################################################################################################
     def find_optimal_weights(self):
         t0 = time.time()
@@ -199,8 +200,8 @@ class LLM():
     ################################################################################################
     def Viterbi(self, line):
         """
-        gets weight vector w and list of words s and returns 
-        :return: the most plausible  tag sequence for s  using viterbi
+            gets weight vector w and list of words s and and m as beam size returns
+            :return: the most plausible  tag sequence for s  using viterbi
         """
         s = line.split()
         st= time.time()
@@ -212,41 +213,48 @@ class LLM():
         end=len(s)+1
         t_k=lambda k: ['.'] if k>=end  else ( list(self.feat_class.possible_tags) if k > 0   else ['*'] )
         # getting group of tag at k level
-        get_w=lambda l: [0] if len(l)==0 else self.w[l] 
+        get_w=lambda l: [0] if len(l)==0 else self.w[l]
 
         f2= np.vectorize( lambda w,p_2_tag,p_tag,t,wn,wp:np.array([w,p_2_tag,p_tag,t,wn,wp],dtype=object) ,excluded=['w','wn',"wp"],signature='(),(),(),(),(),()->(k)')
         #create history vector
         f12= np.vectorize( lambda y:  np.sum(get_w(self.feat_class.get_represent_input_with_features(y))) ,signature='(6)->()')
-        #sum the features weights getting from history vector   
+        #sum the features weights getting from history vector
         f3= np.vectorize( (lambda k,h,x: pi[k][h[1],h[2]]*x) , excluded = ['k'] ,signature='(),(6),()->()')
-        
+
         def foo(h,x,d1,d2):
             d1[h[2],h[3]]= x
             d2[h[2],h[3]]= h[1]
         f4= np.vectorize( foo , excluded=['d1','d2'], signature='(6),(),(),()->()')
 
+        tp_2=["*"]
+        tp_1=["*"]
         for k in range(1,len(s)+1):
             Bp[k]={}
             pi[k]={}
             w= s[k-1]
             wn="." if k>=end-1 else s[k]
-            wp= s[k-2] 
-            tp_2=t_k(k-2)
-            t_p_1=t_k(k-1)
+            wp= s[k-2]
             t=t_k(k)
-            x,y,z=np.meshgrid(tp_2,t_p_1,t)#create grid from all input
-            b=f2(w,x,y,z,wn,wp)# find all possible history
-
-            #history array-> probability array
+            #print(tp_2)
+            x,y,z=np.meshgrid(tp_2,tp_1,t)
+            b=f2(w,x,y,z,wn,wp)
             c=f12(b)
             c=scipy.special.softmax(c,axis=2)
             c=f3(k-1,b,c)
-            
-            max_indices=np.argmax(c,axis=1) 
+            max_indices=np.argmax(c,axis=1)
             I, J = np.indices(max_indices.shape)
+            cq=c[I,max_indices,J]
+            bq=b[I,max_indices,J]
+            #print(cq.shape,bq.shape)
+            indexs=np.argpartition(cq,kth=cq.shape[-1]- self.m ,axis=-1)[..., -self.m:]
+            cq=cq[...,indexs]
+            bq=bq[...,indexs,:]
+            tp_2=np.unique(bq[...,2])
+            tp_1=np.unique(bq[...,3])
+            #print(len(t_p_1),len(tp_2))
             d1={}
             d2={}
-            f4(b[I,max_indices,J],c[I,max_indices,J],d1,d2)
+            f4(bq,cq,d1,d2)
             Bp[k]=d2
             pi[k]=d1
 
@@ -254,16 +262,15 @@ class LLM():
         n= len(s)
         s_tags=list(tag_s[-1])
 
-        while n > 2:
-            if Bp[n][s_tags[0], s_tags[1]] == 'NN' and s[n - 3].endswith("s"):
-                s_tags.insert(0, 'NNS')
-            elif Bp[n][s_tags[0], s_tags[1]] == 'NNS' and not s[n - 3].endswith("s"):
-                s_tags.insert(0, 'NN')
-            else:
-                s_tags.insert(0, Bp[n][s_tags[0], s_tags[1]])
-            n -= 1
+        while n>2:
+            if (s_tags[0],s_tags[1]) not in Bp[n]:#for debugging
+                print (s)
+            s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
+            n-=1
 
+        print ("finished with viterbi in: " ,time.time()-st)
         return s_tags
+
 
     ################################################################################################
     def tag_file_multi(self,file_name):
@@ -305,9 +312,8 @@ class LLM():
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
 
         """
-
         t0 = time.time()
-        save_path = join(self.data_path, f'NIKI_CHECK_tags_{self.feat_thresh}_{file_name}')
+        save_path = join(self.data_path, f'tags_{self.feat_thresh}_{file_name}')
         file_path = join(self.data_path, file_name)
 
         with open(file_path) as f_r:
@@ -315,10 +321,9 @@ class LLM():
 
         lines_queue = multiprocessing.Queue()
         results_queue = multiprocessing.Queue()
-        num_processes = round(multiprocessing.cpu_count() / 2) + 1
-        num_processes = 1
-        print(f'pool is using  {num_processes} processes')
-        the_pool = multiprocessing.Pool(num_processes, worker_main, (self, lines_queue, results_queue,))
+
+        print(f'pool is using  {round(multiprocessing.cpu_count() / 2)} processes')
+        the_pool = multiprocessing.Pool(round(multiprocessing.cpu_count() / 2), worker_main, (self, lines_queue, results_queue,))
         for line_item in enumerate(all_lines):
             lines_queue.put(line_item)
 
@@ -361,6 +366,7 @@ class LLM():
                 tags = self.Viterbi(line)
                 s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
                 print(f"writing line {line_idx}")
+                print(s)
                 f_s.write(s + "\n")
                 f_s.flush()
 
