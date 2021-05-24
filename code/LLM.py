@@ -116,7 +116,10 @@ class LLM():
         :param feat_class:
         :return:
         """
-        train_data_path = join(self.data_path, f"train_data_dict_{self.feat_thresh}.pkl")
+        train_data_path = join(self.data_path, f'{self.save_files_prefix}_train_data_dict_'
+                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
+                                                    f'{self.feat_stats.n_total_features}.pkl')
+
         if os.path.isfile(train_data_path):
             with open(train_data_path, 'rb') as f:
                 total_train_data_dict = pickle.load(f)
@@ -153,10 +156,9 @@ class LLM():
             pickle.dump(total_train_data_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
         return total_train_data_dict
 
-
     ######################################################################################################
     def find_optimal_weights(self):
-
+        t0 = time.time()
         self.feat_stats = feature_classes.feature_statistics_class()
         self.feat_stats.get_all_counts(self.train_file_path)
         print('finished creating features statistic dicts')
@@ -186,7 +188,7 @@ class LLM():
         with open(optimal_weights_path, 'wb') as f:
             pickle.dump(res.x, f, protocol=pickle.HIGHEST_PROTOCOL)
             print(f'saved optimal weights in: {optimal_weights_path}')
-        
+        print(f"time took for calculating optimal weights = {time.time()}")
         return res.x
 
     ################################################################################################
@@ -252,16 +254,15 @@ class LLM():
         n= len(s)
         s_tags=list(tag_s[-1])
 
-        while n>2:
-            if Bp[n][s_tags[0],s_tags[1]] == 'NN' and s[n-2].endswith("s"):
+        while n > 2:
+            if Bp[n][s_tags[0], s_tags[1]] == 'NN' and s[n - 3].endswith("s"):
                 s_tags.insert(0, 'NNS')
-            elif Bp[n][s_tags[0],s_tags[1]] == 'NNS' and not s[n-2].endswith("s"):
+            elif Bp[n][s_tags[0], s_tags[1]] == 'NNS' and not s[n - 3].endswith("s"):
                 s_tags.insert(0, 'NN')
             else:
-                s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])
-            n-=1
+                s_tags.insert(0, Bp[n][s_tags[0], s_tags[1]])
+            n -= 1
 
-        print ("finished with viterbi in: " ,time.time()-st)
         return s_tags
 
     ################################################################################################
@@ -304,8 +305,9 @@ class LLM():
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
 
         """
+
         t0 = time.time()
-        save_path = join(self.data_path, f'tags_{self.feat_thresh}_{file_name}')
+        save_path = join(self.data_path, f'NIKI_CHECK_tags_{self.feat_thresh}_{file_name}')
         file_path = join(self.data_path, file_name)
 
         with open(file_path) as f_r:
@@ -313,9 +315,10 @@ class LLM():
 
         lines_queue = multiprocessing.Queue()
         results_queue = multiprocessing.Queue()
-
-        print(f'pool is using  {round(multiprocessing.cpu_count() / 2)} processes')
-        the_pool = multiprocessing.Pool(round(multiprocessing.cpu_count() / 2), worker_main, (self, lines_queue, results_queue,))
+        num_processes = round(multiprocessing.cpu_count() / 2) + 1
+        num_processes = 1
+        print(f'pool is using  {num_processes} processes')
+        the_pool = multiprocessing.Pool(num_processes, worker_main, (self, lines_queue, results_queue,))
         for line_item in enumerate(all_lines):
             lines_queue.put(line_item)
 
@@ -358,7 +361,6 @@ class LLM():
                 tags = self.Viterbi(line)
                 s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
                 print(f"writing line {line_idx}")
-                print(s)
                 f_s.write(s + "\n")
                 f_s.flush()
 

@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import re
 import numpy as np
+from collections import Counter
 
 class feature_statistics_class():
     def __init__(self):
@@ -81,8 +82,8 @@ class feature_statistics_class():
                 del splited_words[-1]
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
-                    w = cur_word[0]
-                    for l in cur_word[1:3]:
+                    w = ""
+                    for l in cur_word[:4]:
                         w = w + l
                         if (w, cur_tag) not in self.prefix_tags_count_dict:
                             self.prefix_tags_count_dict[(w, cur_tag)] = 1
@@ -350,7 +351,7 @@ class feature2id_class():
         # feature is cpaital in middle
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        if self.get_is_capital_in_middle(word):
+        if self.get_is_capital_in_middle(word) and pword != "*":
             features.append(feat_dict_start_point)
 
         # feature for is word length smaller than 4
@@ -388,6 +389,7 @@ class feature2id_class():
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
         features.append(feat_dict_start_point)
 
+        assert len(Counter(features).keys()) == len(features), 'same feature number multiple times'
         return features
 
     #######################################################################################
