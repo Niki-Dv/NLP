@@ -12,7 +12,7 @@ import random
 import multiprocessing
 class LLM():
 
-    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path, save_files_prefix="", viterbi_beam_num=5):
+    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path, save_files_prefix="", viterbi_beam_num=5,optim_lambda_val = 0.3):
         """
 
         :param feat_thresh:feature count threshold - empirical count must be higher than this
@@ -22,7 +22,7 @@ class LLM():
         """
 
         self.feat_thresh = feat_thresh#
-        self.optim_lambda_val = 0.3
+        self.optim_lambda_val = optim_lambda_val
         self.special_feat_threshold = special_features_thresh
         self.m = viterbi_beam_num
         self.num_line_iter= num_line_iter# 
@@ -40,7 +40,6 @@ class LLM():
         :return: each line dictionary is saved in the following format
         """
         start = time.time()
-        print('gradient started')
 
         num_lines = max(train_total_dict.keys())
         curr_lines_idxs = random.sample(list(range(num_lines)), self.num_line_iter)
@@ -69,7 +68,7 @@ class LLM():
 
         gradient -= OPTIM_LAMBDA * w
         gradient = -gradient
-        print(f'gradient finished in {time.time()-start}')
+
         return gradient
 
 ######################################################################################################
@@ -83,7 +82,6 @@ class LLM():
         :return: each line dictionary is saved in the following format
         """
         start = time.time()
-        print('started calc loss func')
 
         num_lines = max(train_total_dict.keys())
         curr_lines_idxs = random.sample(list(range(num_lines)), min(self.num_line_iter, num_lines))
@@ -106,7 +104,6 @@ class LLM():
 
         lose_func_val -= 0.5 * OPTIM_LAMBDA * np.linalg.norm(w)
         lose_func_val = -lose_func_val
-        print(f'finished calc loss func in: {time.time() - start}, loss value = {lose_func_val}')
         return lose_func_val
 
     ######################################################################################################
@@ -167,7 +164,7 @@ class LLM():
         print('finished creating features statistic dicts')
         self.feat_class = feature_classes.feature2id_class(self.feat_stats, self.feat_thresh, self.special_feat_threshold)
         self.feat_class.get_all_feat_dicts(self.train_file_path)
-        print('finished creating features dicts')
+        print(f'finished creating features dicts time took to create final dict for train file = {time.time()-t0}')
          #get feat_class
 
         optimal_weights_path = join(self.data_path, f'{self.save_files_prefix}_optimal_weights_'
@@ -184,6 +181,7 @@ class LLM():
         print('finished creating all data representation dict')
         # find optimal weights
         w_0 = np.random.rand(tot_num_features)
+        t0 = time.time()
         res = scipy.optimize.minimize(self.loss_function, w_0,
                                     args=(total_train_data_dict, tot_num_features, self.optim_lambda_val),
                                     method="L-BFGS-B",
@@ -191,7 +189,7 @@ class LLM():
         with open(optimal_weights_path, 'wb') as f:
             pickle.dump(res.x, f, protocol=pickle.HIGHEST_PROTOCOL)
             print(f'saved optimal weights in: {optimal_weights_path}')
-        print(f"time took for calculating optimal weights = {time.time()}")
+        print(f"time took for calculating optimal weights = {time.time() -t0}")
         return res.x
 
     ################################################################################################
@@ -237,7 +235,6 @@ class LLM():
             wn="." if k>=end-1 else s[k]
             wp= s[k-2]
             t=t_k(k)
-            #print(tp_2)
             x,y,z=np.meshgrid(tp_2,tp_1,t)
             b=f2(w,x,y,z,wn,wp)
             c=f12(b)
@@ -247,13 +244,11 @@ class LLM():
             I, J = np.indices(max_indices.shape)
             cq=c[I,max_indices,J]
             bq=b[I,max_indices,J]
-            #print(cq.shape,bq.shape)
             indexs=np.argpartition(cq,kth=cq.shape[-1]- self.m ,axis=-1)[..., -self.m:]
             cq=cq[...,indexs]
             bq=bq[...,indexs,:]
             tp_2=np.unique(bq[...,2])
             tp_1=np.unique(bq[...,3])
-            #print(len(t_p_1),len(tp_2))
             d1={}
             d2={}
             f4(bq,cq,d1,d2)
@@ -268,19 +263,20 @@ class LLM():
             s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
             n-=1
 
-        print ("finished with viterbi in: " ,time.time()-st)
         return s_tags
 
 
     ################################################################################################
-    def tag_file_multi(self,file_name):
+    def tag_file_multi(self,file_name, save_files_prefix=""):
         """
         gets file_name in data path with sentences
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.  
         
         """
         t0 = time.time()
-        save_path=join(self.data_path,f'tags_{self.feat_thresh}_{file_name}')
+        save_path=join(self.data_path, f'{save_files_prefix}_tags_'
+                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
+                                                    f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path= join(self.data_path,file_name)
 
         with open(file_path) as f_r:
@@ -296,8 +292,6 @@ class LLM():
                 # del splited_words[-1] could be needed
                 tags = results[line_idx]
                 s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
-                print("writing:")
-                print(s)
                 f_s.write(s + "\n")
                 f_s.flush()
 
@@ -306,14 +300,16 @@ class LLM():
         return save_path
 
     ################################################################################################
-    def tag_file_multi_2(self, file_name):
+    def tag_file_multi_2(self, file_name,save_files_prefix):
         """
         gets file_name in data path with sentences
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
 
         """
         t0 = time.time()
-        save_path = join(self.data_path, f'tags_{self.feat_thresh}_{file_name}')
+        save_path=join(self.data_path, f'{save_files_prefix}_tags_'
+                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
+                                                    f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path = join(self.data_path, file_name)
 
         with open(file_path) as f_r:
@@ -334,7 +330,6 @@ class LLM():
         curr_line_needed = 0
         while True:
             if curr_line_needed in results_dict.keys():
-                print(f"writing line {curr_line_needed}")
                 f_s = open(save_path, "a")
                 f_s.write(results_dict[curr_line_needed] + "\n")
                 f_s.close()
@@ -342,10 +337,10 @@ class LLM():
                 if curr_line_needed == len(all_lines):
                     break
             try:
-                line_idx, s = results_queue.get(timeout=100)
+                line_idx, s = results_queue.get(timeout=50)
                 results_dict[line_idx] = s
             except queue.Empty:
-                print('empty queue, waiting again')
+                pass
 
         print(f"saved in {save_path}, tagging took: {time.time() - t0}")
         return save_path
@@ -374,7 +369,6 @@ class LLM():
 
 ################################################################################################
 def worker_main(L, lines_queue, results_queue):
-    print("PROC CREATED")
     while True:
         line_idx, line = lines_queue.get()
         tags = L.Viterbi(line)
