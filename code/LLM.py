@@ -11,7 +11,8 @@ import time
 import random
 import multiprocessing
 class LLM():
-    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path, save_files_prefix=""):
+
+    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path, save_files_prefix="", viterbi_beam_num=5):
         """
 
         :param feat_thresh:feature count threshold - empirical count must be higher than this
@@ -23,6 +24,7 @@ class LLM():
         self.feat_thresh = feat_thresh#
         self.optim_lambda_val = 0.3
         self.special_feat_threshold = special_features_thresh
+        self.m = viterbi_beam_num
         self.num_line_iter= num_line_iter# 
         self.data_path=data_path#
         self.save_files_prefix = save_files_prefix
@@ -263,8 +265,6 @@ class LLM():
         s_tags=list(tag_s[-1])
 
         while n>2:
-            if (s_tags[0],s_tags[1]) not in Bp[n]:#for debugging
-                print (s)
             s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
             n-=1
 
