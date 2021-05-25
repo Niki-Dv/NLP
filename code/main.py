@@ -78,9 +78,9 @@ def train_test_section_a():
     train_file = join(data_path, train_file_name)
     L = LLM(0, 0, 4999, data_path,save_files_prefix="module1", optim_lambda_val=0.25)
     L.train(train_file)
-    tags_file = L.tag_file_multi_2('test1.words',"module1")
+    tags_file = L.tag_file_multi_2('test1.words')
     test(data_path, tags_file)
-    L.tag_file_multi_2('comp1.words',"module1")
+    L.tag_file_multi_2('comp1.words')
 
 def train_test_section_b():
     data_path = join(curr_dir, "..", 'data')
