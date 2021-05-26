@@ -262,23 +262,25 @@ class LLM():
         while n>2:
             s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
             n-=1
-
+        s_tags=["NNS"   if w.endswith('s') and t=="NN" else t for t,w in zip(s_tags,s)]
+        s_tags=["NN"  if (not w.endswith('s')) and t=="NNS" else t for t,w in zip(s_tags,s)]
         return s_tags
 
 
     ################################################################################################
-    def tag_file_multi(self,file_name, save_files_prefix=""):
+    def tag_file_multi(self,file_name):
         """
         gets file_name in data path with sentences
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.  
         
         """
         t0 = time.time()
-        save_path=join(self.data_path, f'{save_files_prefix}_tags_'
+        head=file_name.split(".")
+        save_path=join(self.data_path, f'{self.save_files_prefix}_{head}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path= join(self.data_path,file_name)
-
+    
         with open(file_path) as f_r:
             all_lines = f_r.readlines()
 
@@ -300,14 +302,14 @@ class LLM():
         return save_path
 
     ################################################################################################
-    def tag_file_multi_2(self, file_name,save_files_prefix):
+    def tag_file_multi_2(self, file_name):
         """
         gets file_name in data path with sentences
          tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
 
         """
         t0 = time.time()
-        save_path=join(self.data_path, f'{save_files_prefix}_tags_'
+        save_path=join(self.data_path, f'{self.save_files_prefix}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path = join(self.data_path, file_name)
