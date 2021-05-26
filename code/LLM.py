@@ -262,7 +262,8 @@ class LLM():
         while n>2:
             s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
             n-=1
-
+        s_tags=["NNS"   if w.endswith('s') and t=="NN" else t for t,w in zip(s_tags,s)]
+        s_tags=["NN"  if (not w.endswith('s')) and t=="NNS" else t for t,w in zip(s_tags,s)]
         return s_tags
 
 
@@ -274,16 +275,12 @@ class LLM():
         
         """
         t0 = time.time()
-        head=file_name.split(".")[0]
+        head=file_name.split(".")
         save_path=join(self.data_path, f'{self.save_files_prefix}_{head}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path= join(self.data_path,file_name)
-
-
-        if os.path.isfile(save_path):
-            print('the file was already taged')
-            return save_path
+    
         with open(file_path) as f_r:
             all_lines = f_r.readlines()
 
@@ -312,13 +309,11 @@ class LLM():
 
         """
         t0 = time.time()
-        head=file_name.split(".")[0]
-        save_path=join(self.data_path, f'{self.save_files_prefix}_{head}_tags_'
+        save_path=join(self.data_path, f'{self.save_files_prefix}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path = join(self.data_path, file_name)
-        if os.path.isfile(save_path):
-            print('the file was already taged')
+
         with open(file_path) as f_r:
             all_lines = f_r.readlines()
 
