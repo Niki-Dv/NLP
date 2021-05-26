@@ -89,7 +89,6 @@ def train_test_section_b():
     L = LLM(0, 0, 249, data_path ,save_files_prefix="module2" ,optim_lambda_val=0.25)
     L.train(train_file)
     tags_file = L.tag_file_multi_2('test1.words')
-
     tags_file = L.tag_file_multi_2('comp2.words')
 
 if __name__ == '__main__':
