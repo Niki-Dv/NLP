@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import sys
 import re
 import numpy as np
 from collections import Counter
@@ -246,6 +247,26 @@ class feature2id_class():
         self.n_total_features += 1 # for word is not actual word or number
         self.n_total_features += 1 # for bias
 
+        num_feat_list = [
+            self.n_word_tag_pairs,
+            self.n_suffix_tag_pairs,
+            self.n_prefix_tag_pairs,
+            self.n_chain_tags,
+            self.n_chain_tags_len_2,
+            self.n_tag,
+            self.n_prev_word_tag_pairs,
+            self.n_next_word_tag_pairs,
+            self.n_is_nunber,
+            self.n_is_capital_in_middle,
+            self.n_is_word_len_smaller_than_4,
+            self.n_is_word_smaller_than_prev,
+            self.n_is_word_smaller_than_next,
+            self.n_is_word_ends_with_s,
+            self.n_word_is_not_word_or_number,
+            self.n_bias_feature
+        ]
+        for n_feat in num_feat_list:
+            print(n_feat)
 
     #######################################################################################
     def get_represent_input_with_features(self, history):
@@ -501,7 +522,7 @@ class feature2id_class():
                     cur_word, cur_tag = splited_words[word_idx].split('_')
                     key = (prev_tag, cur_tag)
                     if key not in self.tags_chain_len_2_dict and \
-                        self.feature_statistics.tags_chain_len_2_count_dict[key] < self.threshold:
+                        self.feature_statistics.tags_chain_len_2_count_dict[key] >= self.threshold:
                         self.tags_chain_len_2_dict[key] = self.n_chain_tags_len_2
                         self.n_chain_tags_len_2 += 1
                     prev_tag = cur_tag
@@ -545,7 +566,7 @@ class feature2id_class():
                     cur_word, cur_tag = splited_words[word_idx].split('_')
                     key = (prev_word, cur_tag)
                     if key not in self.prev_word_tag_dict and \
-                            self.feature_statistics.prev_word_tag_count_dict[key] < self.threshold:
+                            self.feature_statistics.prev_word_tag_count_dict[key] >= self.threshold:
                         self.prev_word_tag_dict[key] = self.n_prev_word_tag_pairs
                         self.n_prev_word_tag_pairs += 1
                     prev_word = cur_word
