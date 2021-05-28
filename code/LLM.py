@@ -262,8 +262,7 @@ class LLM():
         while n>2:
             s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
             n-=1
-        s_tags=["NNS"   if w.endswith('s') and t=="NN" else t for t,w in zip(s_tags,s)]
-        s_tags=["NN"  if (not w.endswith('s')) and t=="NNS" else t for t,w in zip(s_tags,s)]
+
         return s_tags
 
 
