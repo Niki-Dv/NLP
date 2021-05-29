@@ -274,7 +274,7 @@ class LLM():
         
         """
         t0 = time.time()
-        head=file_name.split(".")
+        head=file_name.split(".")[0]
         save_path=join(self.data_path, f'{self.save_files_prefix}_{head}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
@@ -308,7 +308,7 @@ class LLM():
 
         """
         t0 = time.time()
-        head=file_name.split(".")
+        head=file_name.split(".")[0]
         save_path=join(self.data_path, f'{self.save_files_prefix}_{head}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
