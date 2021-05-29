@@ -200,8 +200,7 @@ class LLM():
     ################################################################################################
     def Viterbi(self, line):
         """
-            gets weight vector w and list of words s and and m as beam size returns
-            :return: the most plausible  tag sequence for s  using viterbi
+            gets sentence and tags it using the Viterbi beam search algorithm with the trained weight vector and beam size m     
         """
         s = line.split()
         st= time.time()
@@ -263,55 +262,25 @@ class LLM():
             s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
             n-=1
 
-        return s_tags
-
-
-    ################################################################################################
-    def tag_file_multi(self,file_name):
-        """
-        gets file_name in data path with sentences
-         tags every word and save it in data_path\\tags_{feat_thresh}_file_name.  
-        
-        """
-        t0 = time.time()
-        head=file_name.split(".")[0]
-        save_path=join(self.data_path, f'{self.save_files_prefix}_{head}_tags_'
-                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
-                                                    f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
-        file_path= join(self.data_path,file_name)
-    
-        with open(file_path) as f_r:
-            all_lines = f_r.readlines()
-
-        print(f'pool is using  {round(multiprocessing.cpu_count()/2)} processes')
-        with multiprocessing.Pool(processes=round(multiprocessing.cpu_count()/2)) as pool:
-            results = pool.map(self.Viterbi, all_lines)
-
-        with open(file_path) as f_r, open(save_path, "w+") as f_s:
-            for line_idx, line in enumerate(f_r):
-                splited_words = line.split()
-                # del splited_words[-1] could be needed
-                tags = results[line_idx]
-                s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
-                f_s.write(s + "\n")
-                f_s.flush()
-
-
-        print(f"saved in {save_path}, tagging took: {time.time()-t0}")
-        return save_path
+        return s_tags    
 
     ################################################################################################
-    def tag_file_multi_2(self, file_name):
+    def predict(self, file_name,save_file_name=""):
         """
         gets file_name in data path with sentences
-         tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
+        param file_name: name of the file in data path to tag
+        :param save_file_name: name of output file if not stated will use a default name 
+        tags every word and save it 
 
         """
         t0 = time.time()
         head=file_name.split(".")[0]
-        save_path=join(self.data_path, f'{self.save_files_prefix}_{head}_tags_'
-                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
-                                                    f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
+        if save_file_name=="":
+            save_file_name = '{self.save_files_prefix}_{head}_tags_'\
+                                                    f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'\
+                                                    f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag'
+
+        save_path=join(self.data_path, save_file_name)
         file_path = join(self.data_path, file_name)
 
         with open(file_path) as f_r:
@@ -348,28 +317,79 @@ class LLM():
         return save_path
 
     ################################################################################################
-    def tag_file(self, file_name):
-        """
-        gets file_name in data path with sentences
-         tags every word and save it in data_path\\tags_{feat_thresh}_file_name.
 
-        """
-        save_path = join(self.data_path, f'tags_{self.save_files_prefix}{self.feat_thresh}_{file_name}')
-        file_path = join(self.data_path, file_name)
-        with open(file_path) as f_r, open(save_path, "w+") as f_s:
-            for line_idx, line in enumerate(f_r):
-                splited_words = line.split()
-                # del splited_words[-1] could be needed
-                tags = self.Viterbi(line)
-                s = " ".join(list(map(lambda x, y: x + "_" + y, splited_words, tags)))
-                print(f"writing line {line_idx}")
-                print(s)
-                f_s.write(s + "\n")
-                f_s.flush()
 
-        print("saved in {save_path}")
+def sperate_tags(self,file_path_read,file_path_write):
+    """
+    get file_path_read of file with words and tags write's to file_path_write only words
+    """
+    with open(file_path_read) as f_r, open(file_path_write,"w+") as f_s:
+            for line in f_r:
+                splited_words = re.split('[ \n]', line)
+                words = [re.split('_', word)[0] for word in splited_words] 
+                f_s.write(" ".join(words)+"\n")
 
-################################################################################################
+    ################################################################################################
+
+def _test(self,file_1,file_2):
+  
+    dict_res_by_tag = {}
+    with open(file_1) as f_1, open(file_2) as f_2:
+        lines_1=f_1.readlines()
+        lines_2=f_2.readlines()
+        print(f"{len(lines_1)}, {len(lines_2)}")
+        true_count = 0
+        false_count = 0
+        for i in range(len(lines_1)):
+
+            splited_words2 = re.split('[ \n]', lines_2[i])
+            splited_words1 = re.split('[ \n]', lines_1[i])
+
+            del splited_words1[-1]
+            del splited_words2[-1]
+            for w_idx in range(len(splited_words1)-1):
+                cur_word_1, cur_tag_1 = splited_words1[w_idx].split('_')
+                cur_word_2, cur_tag_2 = splited_words2[w_idx].split('_')
+                if cur_tag_2 not in dict_res_by_tag.keys():
+                    dict_res_by_tag[cur_tag_2] = {}
+                    dict_res_by_tag[cur_tag_2][True] = 0
+                    dict_res_by_tag[cur_tag_2][False] = 0
+                    dict_res_by_tag[cur_tag_2]['Total'] = 0
+                if cur_tag_1 != cur_tag_2:
+                     dict_res_by_tag[cur_tag_2][False] +=1
+                     false_count +=1
+                else:
+                    dict_res_by_tag[cur_tag_2][True] +=1
+                    true_count +=1
+
+                dict_res_by_tag[cur_tag_2]['Total'] +=1
+
+    dict_res_by_tag = dict(sorted(dict_res_by_tag.items(), key=lambda item: item[1]['Total']))
+    for pos_tag, tag_dict in dict_res_by_tag.items():
+        if tag_dict[True]/(tag_dict[True] + tag_dict[False]) * 100 < 95:
+            print(f'Results for tag {pos_tag} are correct at : {tag_dict[True]/(tag_dict[True] + tag_dict[False]) * 100} of total: {tag_dict[True] + tag_dict[False]}')
+
+    print(f'Results for general are correct at : {true_count/(true_count + false_count) * 100}')
+
+    ################################################################################################
+
+def predict_test(self, file_name):
+    """
+    gets test file ( file composed of sentences with tags) and compare the results of our tags prediction with given file     
+    """
+    head=file_name.split(".")[0]
+    new_file= head+".words"
+    file_path_read=join(self.data_path,file_name)
+    file_path_save=join(self.data_path,new_file)
+    self.sperate_tags(file_path_read,file_path_save)
+    f=self.predict(new_file)
+    self._test(f,file_path_read)
+    return f
+
+
+
+
+    ################################################################################################
 def worker_main(L, lines_queue, results_queue):
     while True:
         line_idx, line = lines_queue.get()
