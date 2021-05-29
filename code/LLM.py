@@ -12,7 +12,7 @@ import random
 import multiprocessing
 class LLM():
 
-    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path, save_files_prefix="", viterbi_beam_num=5,optim_lambda_val = 0.3):
+    def __init__(self, feat_thresh, special_features_thresh, num_line_iter, data_path, save_files_prefix="", viterbi_beam_num=3,optim_lambda_val = 0.3):
         """
 
         :param feat_thresh:feature count threshold - empirical count must be higher than this
@@ -28,7 +28,10 @@ class LLM():
         self.num_line_iter= num_line_iter# 
         self.data_path=data_path#
         self.save_files_prefix = save_files_prefix
+        self.train_file_path = None
+        self.w = None
         self.feat_stats = None
+        self.feat_class = None
 
     def loss_function_gradient(self,w, train_total_dict, tot_num_features, OPTIM_LAMBDA=0.5):
         """
@@ -193,9 +196,17 @@ class LLM():
         return res.x
 
     ################################################################################################
-    def train(self,file_path):
-        self.train_file_path=file_path
+    def train(self,file_path, capital_in_middle_feat_set_w=False, is_num_feat_set_w=False, w_factor=2):
+        self.train_file_path = file_path
         self.w = self.find_optimal_weights()
+
+        if capital_in_middle_feat_set_w:
+            capital_in_middle_feat_pos = self.feat_class.get_pos_of_captial_in_mid_feat()
+            self.w[capital_in_middle_feat_pos] = w_factor * np.max(self.w)
+
+        if is_num_feat_set_w:
+           is_number_feat_pos = self.feat_class.get_pos_of_is_number()
+           self.w[is_number_feat_pos] = w_factor * np.max(self.w)
 
     ################################################################################################
     def Viterbi(self, line):
@@ -211,9 +222,12 @@ class LLM():
         pi[0]={}
         pi[0]['*','*']=1
         end=len(s)+1
-        t_k=lambda k: ['.'] if k>=end  else ( list(self.feat_class.possible_tags) if k > 0   else ['*'] )
+        t_k = lambda k: ['.'] if k>=end  else ( list(self.feat_class.possible_tags) if k > 0   else ['*'] )
         # getting group of tag at k level
-        get_w=lambda l: [0] if len(l)==0 else self.w[l]
+        #get_w = lambda l: [0] if len(l)==0 else self.w[l]
+
+        def get_w(l):
+            return [0] if len(l) == 0 else self.w[l]
 
         f2= np.vectorize( lambda w,p_2_tag,p_tag,t,wn,wp:np.array([w,p_2_tag,p_tag,t,wn,wp],dtype=object) ,excluded=['w','wn',"wp"],signature='(),(),(),(),(),()->(k)')
         #create history vector
@@ -233,7 +247,7 @@ class LLM():
             pi[k]={}
             w= s[k-1]
             wn="." if k>=end-1 else s[k]
-            wp= s[k-2]
+            wp= s[k-2] if k-2 >= 0 else "*"
             t=t_k(k)
             x,y,z=np.meshgrid(tp_2,tp_1,t)
             b=f2(w,x,y,z,wn,wp)
@@ -262,6 +276,9 @@ class LLM():
         while n>2:
             s_tags.insert(0,Bp[n][s_tags[0],s_tags[1]])# workes better
             n-=1
+
+        s_tags = ["NNS" if w.endswith('s') and t == "NN" else t for t, w in zip(s_tags, s)]
+        s_tags = ["NN" if (not w.endswith('s')) and t == "NNS" else t for t, w in zip(s_tags, s)]
 
         return s_tags
 
@@ -308,7 +325,7 @@ class LLM():
 
         """
         t0 = time.time()
-        save_path=join(self.data_path, f'{self.save_files_prefix}_tags_'
+        save_path=join(self.data_path, f'{file_name}_{self.save_files_prefix}_tags_'
                                                     f'{self.feat_thresh}_lambda_{self.optim_lambda_val}_'
                                                     f'{self.feat_stats.n_total_features}_vit_m_{self.m}.wtag')
         file_path = join(self.data_path, file_name)
