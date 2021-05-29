@@ -315,11 +315,23 @@ class LLM():
 
         print(f"saved in {save_path}, tagging took: {time.time() - t0}")
         return save_path
-
+    def predict_test(self, file_name):
+        """
+        gets test file ( file composed of sentences with tags) and compare the results of our tags prediction with given file     
+        """
+        head=file_name.split(".")[0]
+        new_file= head+".words"
+        file_path_read=join(self.data_path,file_name)
+        file_path_save=join(self.data_path,new_file)
+        sperate_tags(file_path_read,file_path_save)
+        f=self.predict(new_file)
+        test(f,file_path_read)
+        return f
+        
     ################################################################################################
 
 
-def sperate_tags(self,file_path_read,file_path_write):
+def sperate_tags(file_path_read,file_path_write):
     """
     get file_path_read of file with words and tags write's to file_path_write only words
     """
@@ -331,7 +343,7 @@ def sperate_tags(self,file_path_read,file_path_write):
 
     ################################################################################################
 
-def _test(self,file_1,file_2):
+def test(file_1,file_2):
   
     dict_res_by_tag = {}
     with open(file_1) as f_1, open(file_2) as f_2:
@@ -373,18 +385,6 @@ def _test(self,file_1,file_2):
 
     ################################################################################################
 
-def predict_test(self, file_name):
-    """
-    gets test file ( file composed of sentences with tags) and compare the results of our tags prediction with given file     
-    """
-    head=file_name.split(".")[0]
-    new_file= head+".words"
-    file_path_read=join(self.data_path,file_name)
-    file_path_save=join(self.data_path,new_file)
-    self.sperate_tags(file_path_read,file_path_save)
-    f=self.predict(new_file)
-    self._test(f,file_path_read)
-    return f
 
 
 

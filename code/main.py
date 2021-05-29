@@ -109,16 +109,17 @@ def train_test_section_a():
     data_path = join(curr_dir, "..", 'data')
     train_file_name = 'train1.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(0, 0, 4999, data_path,save_files_prefix="mod1", optim_lambda_val=0.25)
+    L = LLM(2, 2, 4999, data_path,save_files_prefix="mod1", optim_lambda_val=0.25)
     L.train(train_file)
-    L.test_compare(train_file)
+    L.predict_test(train_file)
     L.predict('comp1.words')
 
 def train_test_section_b():
     data_path = join(curr_dir, "..", 'data')
     train_file_name = 'train2.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(0, 0, 249, data_path ,save_files_prefix="mod2" ,optim_lambda_val=0.25)
+    L = LLM(2, 2, 249, data_path ,save_files_prefix="mod2" ,optim_lambda_val=0.25)
+    L.m=1
     L.train(train_file)
     L.predict_test(train_file)
     L.predict('comp2.words')
