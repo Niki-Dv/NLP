@@ -47,6 +47,7 @@ def test_create_confusion_mat(data_path, your_tags_file, conf_mat_save_name='con
                         dict_res_by_tag[cur_tag_2][cur_tag_1] = 1
                     else:
                         dict_res_by_tag[cur_tag_2][cur_tag_1] += 1
+
                     false_count += 1
                 else:
                     dict_res_by_tag[cur_tag_2][True] += 1
@@ -121,7 +122,7 @@ def train_test_section_b():
     train_file_name = 'train2.wtag'
     test_file_name = 'test1.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(2, 2, 249, data_path, save_files_prefix="mod2_29_5", optim_lambda_val=0.25)
+    L = LLM(0, 0, 249, data_path, save_files_prefix="mod2_29_5", optim_lambda_val=0.25)
     L.m = 1
     L.train(train_file)
     my_tags_path = L.predict_test(test_file_name)
@@ -131,8 +132,8 @@ def train_test_section_b():
 
 if __name__ == '__main__':
     #train_test_section_a()
-    #train_test_section_b()
-    # data_path = join(curr_dir, "..", 'data')
+    train_test_section_b()
+    # data_path = join(curr_dir, "..", 'data'``)
     # train_file_1 = join(data_path, 'train1.wtag')
     # train_file_2 = join(data_path, 'train2.wtag')
     # L = train_on_data(train_file_1, 10, 'train2.wtag')
@@ -143,10 +144,9 @@ if __name__ == '__main__':
     # test_file_without_tags_1= join(data_path, 'v2test1.words')
     # if not  os.path.isfile(test_file_without_tags_1):
     # sperate_tags(test_file_1,test_file_without_tags_1)
-    data_path = join(curr_dir, "..", 'data')
-    my_tags = join(curr_dir, "..", 'data', 'tags_10_v2test1.words')
-    test(data_path, r"C:\\git-projects\\NLP\data\\mod2_29_5_test1_tags_2_lambda_0.25_0_vit_m_1.wtag")
-    test_create_confusion_mat(data_path, r"C:\\git-projects\\NLP\data\\mod2_29_5_test1_tags_2_lambda_0.25_0_vit_m_1.wtag")
+    # data_path = join(curr_dir, "..", 'data')
+    #my_tags = join(curr_dir, "..", 'data', 'tags_10_v2test1.words')
+    #test_create_confusion_mat(data_path, r"C:\\git-projects\\NLP\data\\module1_fixed_tags_5_lambda_0.25_0_vit_m_5.wtag")
 
 
 

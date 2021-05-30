@@ -17,6 +17,8 @@ class feature_statistics_class():
         self.tag_count_dict =               OrderedDict()
         self.prev_word_tag_count_dict =     OrderedDict()
         self.next_word_tag_count_dict =     OrderedDict()
+    
+
 
         # ---Add more count dictionaries here---
 
@@ -30,7 +32,6 @@ class feature_statistics_class():
         self.get_tag_count(file_path)
         self.get_prev_word_tag_pair_count(file_path)
         self.get_next_word_tag_pair_count(file_path)
-
     #######################################################################################
     def get_word_tag_pair_count(self, file_path):  # feature 100
         """
@@ -191,7 +192,6 @@ class feature_statistics_class():
                     else:
                         self.next_word_tag_count_dict[(w, t)] += 1
 
-
 #######################################################################################################################
 class feature2id_class():
     def __init__(self, feature_statistics, threshold, special_feat_threshold):
@@ -199,7 +199,7 @@ class feature2id_class():
         self.threshold = threshold  # feature count threshold - empirical count must be higher than this
         self.special_feat_threshold = special_feat_threshold  # feature count threshold - empirical count must be higher than this
         self.special_tags = ['CD', 'JJR', 'MD', '""', "''", "``"]
-        self.possible_tags = set()
+        self.possible_tags = list()
         self.n_total_features = 0  # Total number of features accumulated
 
         self.n_word_tag_pairs = 0  # Number of Word\Tag pairs features
@@ -210,14 +210,16 @@ class feature2id_class():
         self.n_tag = 0
         self.n_prev_word_tag_pairs = 0
         self.n_next_word_tag_pairs = 0
-        self.n_is_nunber = 1
-        self.n_is_capital_in_middle = 1
-        self.n_is_word_len_smaller_than_4 = 1
-        self.n_is_word_smaller_than_prev = 1
-        self.n_is_word_smaller_than_next = 1
-        self.n_is_word_ends_with_s = 1
-        self.n_word_is_not_word_or_number = 1
-        self.n_bias_feature = 1
+
+        self.n_is_capital_in_middle = 0
+        self.n_is_number = 0
+        self.n_word_is_not_word_or_number = 0
+        self.n_is_word_smaller_than_prev = 0
+        self.n_is_word_smaller_than_next = 0
+        self.n_is_word_len_smaller_than_4 =0
+       
+        #self.n_is_word_ends_with_s = 1
+        #self.n_bias_feature = 1
 
         # Init all features dictionaries
         self.words_tags_dict = OrderedDict()
@@ -229,6 +231,13 @@ class feature2id_class():
         self.prev_word_tag_dict = OrderedDict()
         self.next_word_tag_pairs_dict = OrderedDict()
 
+        self.capital_letter_tag_dict= OrderedDict()
+        self.number_tag_dict = OrderedDict()
+        self.not_number_word_tag_dict=OrderedDict()
+        self.word_smaller_than_prev_dict=OrderedDict()
+        self.word_smaller_than_next_dict=OrderedDict()
+        self.word_len_smaller_4_than_dict=OrderedDict()
+
     #######################################################################################
     def get_all_feat_dicts(self, file_path):
         self.get_word_tag_pairs(file_path)
@@ -239,15 +248,16 @@ class feature2id_class():
         self.get_tag(file_path)
         self.get_prev_word_tag_pair(file_path)
         self.get_next_word_tag_pairs(file_path)
-        self.n_total_features += 1 # for number feat
-        self.n_total_features += 1 # for is captial feat
-        self.n_total_features += 1 # for is word length smaller then 4
-        self.n_total_features += 1 # for is word smaller then prev word
-        self.n_total_features += 1 # for is word smaller then next word
-        self.n_total_features += 1 # for word ends with s
-        self.n_total_features += 1 # for word is not actual word or number
-        self.n_total_features += 1 # for word has all capital letters
-        self.n_total_features += 1 # for bias
+        self.get_all_uniuqe_features_tag()# get all added features
+        #self.n_total_features += 1 # for number feat
+        #self.n_total_features += 1 # for is captial feat
+        #self.n_total_features += 1 # for is word length smaller then 4
+        #self.n_total_features += 1 # for is word smaller then prev word
+        #self.n_total_features += 1 # for is word smaller then next word
+        #self.n_total_features += 1 # for word ends with s
+        #self.n_total_features += 1 # for word is not actual word or number
+        #self.n_total_features += 1 # for word has all capital letters
+        #self.n_total_features += 1 # for bias
 
         num_feat_list = [
             self.n_word_tag_pairs,
@@ -258,34 +268,17 @@ class feature2id_class():
             self.n_tag,
             self.n_prev_word_tag_pairs,
             self.n_next_word_tag_pairs,
-            self.n_is_nunber,
             self.n_is_capital_in_middle,
-            self.n_is_word_len_smaller_than_4,
+            self.n_is_number ,
+            self.n_word_is_not_word_or_number ,
             self.n_is_word_smaller_than_prev,
-            self.n_is_word_smaller_than_next,
-            self.n_is_word_ends_with_s,
-            self.n_word_is_not_word_or_number,
-            self.n_bias_feature
+            self.n_is_word_smaller_than_next ,
+            self.n_is_word_len_smaller_than_4 ,
         ]
         for n_feat in num_feat_list:
             print(n_feat)
 
-    def get_pos_of_captial_in_mid_feat(self):
-        num_feat_list = [
-            self.n_word_tag_pairs,
-            self.n_suffix_tag_pairs,
-            self.n_prefix_tag_pairs,
-            self.n_chain_tags,
-            self.n_chain_tags_len_2,
-            self.n_tag,
-            self.n_prev_word_tag_pairs,
-            self.n_next_word_tag_pairs,
-            self.n_is_nunber
-        ]
-
-        return np.sum(num_feat_list)
-
-    def get_pos_of_is_number(self):
+    def get_pos_of_captial_in_mid_tag(self,tag):
         num_feat_list = [
             self.n_word_tag_pairs,
             self.n_suffix_tag_pairs,
@@ -296,7 +289,22 @@ class feature2id_class():
             self.n_prev_word_tag_pairs,
             self.n_next_word_tag_pairs,
         ]
-        return np.sum(num_feat_list)
+
+        return np.sum(num_feat_list)+self.possible_tags.index(tag)
+
+    def get_pos_of_is_number(self,tag):
+        num_feat_list = [
+            self.n_word_tag_pairs,
+            self.n_suffix_tag_pairs,
+            self.n_prefix_tag_pairs,
+            self.n_chain_tags,
+            self.n_chain_tags_len_2,
+            self.n_tag,
+            self.n_prev_word_tag_pairs,
+            self.n_next_word_tag_pairs,
+            self.n_is_capital_in_middle
+        ]
+        return np.sum(num_feat_list)+self.possible_tags.index(tag)
 
     #######################################################################################
     def get_represent_input_with_features(self, history):
@@ -306,6 +314,7 @@ class feature2id_class():
             :param word_tags_dict: word\tag dict
                 Return a list with all features that are relevant to the given history
         """
+        
         num_feat_list = [
             self.n_word_tag_pairs,
             self.n_suffix_tag_pairs,
@@ -315,14 +324,12 @@ class feature2id_class():
             self.n_tag,
             self.n_prev_word_tag_pairs,
             self.n_next_word_tag_pairs,
-            self.n_is_nunber,
             self.n_is_capital_in_middle,
-            self.n_is_word_len_smaller_than_4,
+            self.n_is_number ,
+            self.n_word_is_not_word_or_number ,
             self.n_is_word_smaller_than_prev,
-            self.n_is_word_smaller_than_next,
-            self.n_is_word_ends_with_s,
-            self.n_word_is_not_word_or_number,
-            self.n_bias_feature
+            self.n_is_word_smaller_than_next ,
+            self.n_is_word_len_smaller_than_4 
         ]
 
         word = history[0]
@@ -394,57 +401,43 @@ class feature2id_class():
         if key in self.next_word_tag_pairs_dict:
             features.append(feat_dict_start_point + self.next_word_tag_pairs_dict[key])
 
+         # feature is cpaital in middle
+        feat_dict_count += 1
+        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
+        if get_is_capital_in_middle(word) and pword != "*":
+            features.append(feat_dict_start_point+self.capital_letter_tag_dict[ctag])
+
         # feature numbers
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        if self.get_is_number(word) and ctag == 'CD':
-            features.append(feat_dict_start_point)
-
-        # feature is cpaital in middle
+        if get_is_number(word):
+            features.append(feat_dict_start_point+self.number_tag_dict[ctag])
+        # feature for is word not word or number
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        if self.get_is_capital_in_middle(word) and pword != "*" and (ctag == "NNP" or ctag == "NNPS"):
-            features.append(feat_dict_start_point)
+        if get_is_not_word_or_number(word):
+            features.append(feat_dict_start_point+self.not_number_word_tag_dict[ctag])
 
-        # feature for is word length smaller than 4
-        feat_dict_count += 1
-        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        TAGS_FOR_SHORT_WORDS = ['PRP', "CD", "IN"]
-        if len(word) < 4 and ctag in TAGS_FOR_SHORT_WORDS:
-            features.append(feat_dict_start_point)
+        
 
         # feature for is word length smaller than prev
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        TAGS_FOR_SHORT_WORDS = ['PRP', "CD", "IN"]
-        if len(word) < len(pword) and ctag in TAGS_FOR_SHORT_WORDS:
-            features.append(feat_dict_start_point)
+
+        if len(word) < len(pword):
+            features.append(feat_dict_start_point+self.word_smaller_than_prev_dict[ctag])
 
         # feature for is word length smaller than next
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        TAGS_FOR_SHORT_WORDS = ['PRP', "CD", "IN"]
-        if len(word) < len(nword) and ctag in TAGS_FOR_SHORT_WORDS:
-            features.append(feat_dict_start_point)
-
-        # feature for is word ends with s
+        if len(word) < len(nword):
+            features.append(feat_dict_start_point+self.word_smaller_than_next_dict[ctag])
+        # feature for is word length smaller than 4
         feat_dict_count += 1
         feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        TAGS_FOR_ENDS_WITH_S = ['NNS', "NNPS"]
-        if word[-1] == 's' and ctag in TAGS_FOR_ENDS_WITH_S:
-            features.append(feat_dict_start_point)
-
-        # feature for is word not word or number
-        feat_dict_count += 1
-        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        if self.get_is_not_word_or_number(word) and word == ctag:
-            features.append(feat_dict_start_point)
-
-        # feature bias
-        feat_dict_count += 1
-        feat_dict_start_point = int(np.sum(num_feat_list[:feat_dict_count]))
-        features.append(feat_dict_start_point)
-
+        if len(word) < 4 :
+            features.append(feat_dict_start_point+self.word_len_smaller_4_than_dict[ctag])
+      
         assert len(Counter(features).keys()) == len(features), 'same feature number multiple times'
         return features
 
@@ -575,16 +568,16 @@ class feature2id_class():
             for line in f:
                 splited_words = re.split('[ \n]', line)
                 del splited_words[-1]
-
+                possible_tags=set()
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
-                    self.possible_tags.add(cur_tag)
+                    possible_tags.add(cur_tag)
                     if (cur_tag not in self.tag_dict) \
                             and (self.feature_statistics.tag_count_dict[cur_tag] >= self.threshold):
                         self.tag_dict[cur_tag] = self.n_tag
                         self.n_tag += 1
+        self.possible_tags=list(possible_tags)
         self.n_total_features += self.n_tag
-
     #######################################################################################
     def get_prev_word_tag_pair(self, file_path):  # feature 106
         """
@@ -629,6 +622,37 @@ class feature2id_class():
                         self.n_next_word_tag_pairs += 1
         self.n_total_features += self.n_next_word_tag_pairs
 
+    def get_all_uniuqe_features_tag(self):
+        """
+           setup for all the uniuqe features
+        """
+        c=0
+        for tag in self.possible_tags:
+            self.capital_letter_tag_dict[tag]=c 
+            self.number_tag_dict[tag]=c
+            self.not_number_word_tag_dict[tag]=c
+            self.word_smaller_than_prev_dict[tag]=c
+            self.word_smaller_than_next_dict[tag]=c
+            self.word_len_smaller_4_than_dict[tag]=c
+
+        
+        self.n_is_capital_in_middle = len(self.possible_tags)
+        self.n_is_number = len(self.possible_tags)
+        self.n_word_is_not_word_or_number = len(self.possible_tags)
+        
+        self.n_is_word_smaller_than_prev = len(self.possible_tags)
+        self.n_is_word_smaller_than_next = len(self.possible_tags)
+        self.n_is_word_len_smaller_than_4 = len(self.possible_tags)
+       
+                    
+        
+        self.n_total_features += self.n_is_capital_in_middle
+        self.n_total_features += self.n_is_number
+        self.n_total_features += self.n_word_is_not_word_or_number
+        self.n_total_features += self.n_is_word_smaller_than_prev
+        self.n_total_features += self.n_is_word_smaller_than_next
+        self.n_total_features += self.n_is_word_len_smaller_than_4
+        
     ######################################################################################
     def get_is_number(self, word):
         reg = re.compile("-?[0-9][0-9,.]+")
@@ -647,3 +671,18 @@ class feature2id_class():
     ######################################################################################
     def get_all_letters_are_capital(self, word):
         return np.all(list(map(str.isupper, word)))
+#######################################################################################################################
+def get_is_number( word):
+        reg = re.compile("-?[0-9][0-9,.]+")
+        return bool(reg.match(word))
+
+    ######################################################################################
+def get_is_capital_in_middle( word):
+        return word[0].isupper() and not np.all(list(map(str.isupper, word)))
+
+    ######################################################################################
+def get_is_not_word_or_number( word):
+        if not get_is_number(word) and not bool(re.match('[a-z,A-Z]', word)):
+            return True
+        return False
+
