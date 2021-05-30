@@ -564,11 +564,11 @@ class feature2id_class():
             :param file_path: full path of the file to read
                 return all tags with index of appearance
         """
+        possible_tags=set()
         with open(file_path) as f:
             for line in f:
                 splited_words = re.split('[ \n]', line)
                 del splited_words[-1]
-                possible_tags=set()
                 for word_idx in range(len(splited_words)):
                     cur_word, cur_tag = splited_words[word_idx].split('_')
                     possible_tags.add(cur_tag)
