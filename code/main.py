@@ -110,10 +110,10 @@ def train_test_section_a():
     train_file_name = 'train1.wtag'
     test_file_name = 'test1.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(2, 2, 4999, data_path, save_files_prefix="mod1_29_5", optim_lambda_val=0.25)
+    L = LLM(0, 0, 4999, data_path, save_files_prefix="mod1_30_5", optim_lambda_val=0.25)
     L.train(train_file)
     my_tags_path = L.predict_test(test_file_name)
-    test_create_confusion_mat(data_path, my_tags_path, 'conf_mod_1_29_5')
+    test_create_confusion_mat(data_path, my_tags_path, 'conf_mod_1_30_5')
     L.predict('comp1.words')
 
 
@@ -122,11 +122,11 @@ def train_test_section_b():
     train_file_name = 'train2.wtag'
     test_file_name = 'test1.wtag'
     train_file = join(data_path, train_file_name)
-    L = LLM(0, 0, 249, data_path, save_files_prefix="mod2_29_5", optim_lambda_val=0.25)
-    L.m = 1
+    L = LLM(0, 0, 249, data_path, save_files_prefix="mod2_30_5", optim_lambda_val=0.25)
     L.train(train_file)
+    L.m = 2
     my_tags_path = L.predict_test(test_file_name)
-    test_create_confusion_mat(data_path, my_tags_path, 'conf_mod_2_29_5')
+    test_create_confusion_mat(data_path, my_tags_path, 'conf_mod_2_30_5')
     L.predict('comp2.words')
 
 
