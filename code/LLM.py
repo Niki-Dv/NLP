@@ -338,6 +338,17 @@ class LLM():
         test(f,file_path_read)
         return f
 
+    def change_weights(self,tag,capital_letter=True,factor=5):
+        """
+        reconfig weights of capital_letter_in_middle feature and is_number_feature
+        if  capital_letter==true will config capital_letter other wise will config is_number
+        """
+        
+        if capital_letter:
+            self.w[self.feat_class.get_pos_of_captial_in_mid_tag(tag)]=factor*max(self.w)
+        else:
+             self.w[self.feat_class.get_pos_of_is_number_tag(tag)]=factor*max(self.w)
+
     ################################################################################################
 
 

@@ -292,7 +292,7 @@ class feature2id_class():
 
         return np.sum(num_feat_list)+self.possible_tags.index(tag)
 
-    def get_pos_of_is_number(self,tag):
+    def get_pos_of_is_number_tag(self,tag):
         num_feat_list = [
             self.n_word_tag_pairs,
             self.n_suffix_tag_pairs,
@@ -634,6 +634,7 @@ class feature2id_class():
             self.word_smaller_than_prev_dict[tag]=c
             self.word_smaller_than_next_dict[tag]=c
             self.word_len_smaller_4_than_dict[tag]=c
+            c+=1
 
         
         self.n_is_capital_in_middle = len(self.possible_tags)
