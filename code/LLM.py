@@ -201,11 +201,11 @@ class LLM():
         self.w = self.find_optimal_weights()
 
         if capital_in_middle_feat_set_w:
-            capital_in_middle_feat_pos = self.feat_class.get_pos_of_captial_in_mid_feat()
+            capital_in_middle_feat_pos = self.feat_class.get_pos_of_captial_in_mid_tag('NNP')
             self.w[capital_in_middle_feat_pos] = w_factor * np.max(self.w)
 
         if is_num_feat_set_w:
-           is_number_feat_pos = self.feat_class.get_pos_of_is_number()
+           is_number_feat_pos = self.feat_class.get_pos_of_is_number_tag('CD')
            self.w[is_number_feat_pos] = w_factor * np.max(self.w)
 
     ################################################################################################
@@ -298,7 +298,7 @@ class LLM():
         lines_queue = multiprocessing.Queue()
         results_queue = multiprocessing.Queue()
 
-        print(f'pool is using  {round(multiprocessing.cpu_count() / 2)} processes')
+        print(f'pool is using  {round(multiprocessing.cpu_count() / 4)} processes')
         the_pool = multiprocessing.Pool(round(multiprocessing.cpu_count() / 2), worker_main, (self, lines_queue, results_queue,))
         for line_item in enumerate(all_lines):
             lines_queue.put(line_item)

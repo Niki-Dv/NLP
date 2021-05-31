@@ -144,9 +144,10 @@ if __name__ == '__main__':
     # test_file_without_tags_1= join(data_path, 'v2test1.words')
     # if not  os.path.isfile(test_file_without_tags_1):
     # sperate_tags(test_file_1,test_file_without_tags_1)
-    # data_path = join(curr_dir, "..", 'data')
-    #my_tags = join(curr_dir, "..", 'data', 'tags_10_v2test1.words')
-    #test_create_confusion_mat(data_path, r"C:\\git-projects\\NLP\data\\module1_fixed_tags_5_lambda_0.25_0_vit_m_5.wtag")
+    data_path = join(curr_dir, "..", 'data')
+    my_tags = join(curr_dir, "..", 'data', 'mod2_30_5_test1_tags_0_lambda_0.25_0_vit_m_2.wtag')
+    test(data_path, my_tags)
+    test_create_confusion_mat(data_path, r"C:\\git-projects\\NLP\data\\module1_fixed_tags_5_lambda_0.25_0_vit_m_5.wtag")
 
 
 
